@@ -6,7 +6,7 @@ namespace HLACaptionReplacer
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello Caption Replacers!");
+            Console.WriteLine("Hello Caption Replacers!!");
         }
     }
 }
