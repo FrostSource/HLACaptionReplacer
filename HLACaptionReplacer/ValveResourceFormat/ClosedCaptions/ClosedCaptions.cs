@@ -102,6 +102,60 @@ namespace ValveResourceFormat.ClosedCaptions
             }
         }
 
+        /// <summary>
+        /// Writes the caption data to the given file.
+        /// </summary>
+        /// <param name="filename">The filename <see cref="string"/>.</param>
+        public void Write(string filename)
+        {
+            var fs = new FileStream(filename, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite);
+
+            var writer = new BinaryWriter(fs);
+
+            writer.Write((UInt32)MAGIC);
+            writer.Write(Version);
+            writer.Write(NumBlocks);
+            writer.Write(BlockSize);
+            writer.Write((uint)Captions.Count);
+            writer.Write(DataOffset);
+
+            ushort runningOffset = 0;
+            int prevBlocknum = 0;
+
+            // Probably could be inside the for loop above, but I'm unsure what the performance costs are of moving the position head manually a bunch compared to reading sequentually
+            foreach (var caption in Captions)
+            {
+                if (caption.Blocknum > prevBlocknum)
+                {
+                    runningOffset = 0;
+                    prevBlocknum = caption.Blocknum;
+                }
+                caption.Offset = runningOffset;
+                var length = (ushort)Encoding.Unicode.GetByteCount(caption.Text + "\0");
+                runningOffset += length;
+
+                writer.Write(caption.Hash);
+                if (Version >= 2) {
+                    writer.Write(caption.UnknownV2);
+                }
+                writer.Write(caption.Blocknum);
+                writer.Write(caption.Offset);
+                writer.Write(length);
+            }
+            foreach (var caption in Captions)
+            {
+                writer.BaseStream.Position = DataOffset + (caption.Blocknum * BlockSize) + caption.Offset;
+                //writer.Write(caption.Text);
+                //caption.Text = writer.ReadNullTermString(Encoding.Unicode);
+                writer.Write(Encoding.Unicode.GetBytes(caption.Text));
+                writer.Write(0);
+            }
+
+            writer.Close();
+            fs.Close();
+        }
+
+
         IEnumerator IEnumerable.GetEnumerator()
         {
             return ((IEnumerable<ClosedCaption>)Captions).GetEnumerator();
