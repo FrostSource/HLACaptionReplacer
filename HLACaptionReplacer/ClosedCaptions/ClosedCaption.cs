@@ -47,6 +47,14 @@ namespace HLACaptionReplacer
             SoundEvent = sndevt;
             Definition = definition;
         }
+
+        public bool IsBlank
+        {
+            get
+            {
+                return Definition == "\0" || Definition == "";
+            }
+        }
     }
 
     

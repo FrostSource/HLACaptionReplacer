@@ -75,7 +75,7 @@ namespace HLACaptionReplacer
             //    .Skip(1)
             //    .Select(m => m.Value)
             //    .ToList();
-            var match = Regex.Match(input, @"^(\S+)(?:[ \t]+(\S+))?$", RegexOptions.Compiled);
+            var match = Regex.Match(input, @"^(\S+)(?:[ \t]+(.+))?$", RegexOptions.Compiled);
             var groups = match.Groups;
             var sndevt = groups[1].Success ? groups[1].Value : null;
             var text = groups[2].Success ? groups[2].Value : null;
@@ -97,8 +97,13 @@ namespace HLACaptionReplacer
                         // why changing blocks messes up captions
                         if (rule.ModificationType == ModificationType.Delete)
                         {
-                            caption.Definition = new string('\0', caption.Length);
-                            deleteCount++;
+                            if (!caption.IsBlank)
+                            {
+                                caption.Definition = new string('b', (caption.Length - 2) / 2);
+                                //Console.WriteLine(Encoding.Unicode.GetBytes(new string('\0', (caption.Length - 2))).Length);
+                                //caption.Definition = "\0";
+                                deleteCount++;
+                            }
                         }
                         else
                         {

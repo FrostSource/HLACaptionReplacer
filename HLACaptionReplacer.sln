@@ -10,8 +10,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests", "Tests\Tests.csproj
 		{57C281D1-AE57-4532-AAC4-972B12D994F2} = {57C281D1-AE57-4532-AAC4-972B12D994F2}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GUI", "GUI\GUI.csproj", "{2DB197CF-CF29-4CC8-9E95-EB7AC9114F2F}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,10 +24,6 @@ Global
 		{519B48F0-CB17-4097-9519-617FD2D59943}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{519B48F0-CB17-4097-9519-617FD2D59943}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{519B48F0-CB17-4097-9519-617FD2D59943}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2DB197CF-CF29-4CC8-9E95-EB7AC9114F2F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2DB197CF-CF29-4CC8-9E95-EB7AC9114F2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2DB197CF-CF29-4CC8-9E95-EB7AC9114F2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2DB197CF-CF29-4CC8-9E95-EB7AC9114F2F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

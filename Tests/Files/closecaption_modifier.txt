@@ -1,0 +1,11 @@
+﻿
+// comments work
+
+//delete darkness vo
+
+vo.01_13035
+
+// replace some lines
+vo.05_02219 <HEADSET><clr:210,100,210>Example replaced caption
+vo.01_13036 <clr:100,190,100>Umm… do you have <i>anything<i> to say to me mate??
+vo.05_00158 <HEADSET><clr:210,100,210>Ah! Check this!<cr>Alyx, you one fine hottie, ya know that?

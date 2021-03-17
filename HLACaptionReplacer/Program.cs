@@ -10,6 +10,7 @@ namespace HLACaptionReplacer
         Custom,
         Replace
     }
+
     class Program
     {
         public static bool PauseOnCompletion { get; set; } = false;
@@ -26,45 +27,12 @@ namespace HLACaptionReplacer
             // Needs a proper parsing library if released
             ParseArgs(args);
 
-            /*var vCaptions = new ValveResourceFormat.ClosedCaptions.ClosedCaptions();
-            vCaptions.Read(args[0]);
-
-            var nCaptions = new ClosedCaptions();
-            foreach(var caption in vCaptions.Captions)
-            {
-                //nCaptions.Add(caption.Hash, caption.Text.Replace("clr:255,190,255", "clr:255,100,100"));
-                //nCaptions.Add(caption.Hash, caption.Text.Replace("clr:255,190,255", "clr:255,0,0"));
-                //if (caption.Text == "Map") Console.WriteLine(nCaptions.GetLastCaption().Length);
-                nCaptions.Add(caption.Hash, caption.Text);
-            }
-            var rep = nCaptions.FindByHash(nCaptions.ComputeHash("vo.01_13035"));
-            rep.Definition = "<clr:255,100,160>Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam";
-            rep.SoundEvent = "TestCC.Alyx";
-
-            if (File.Exists(args[1])) File.Delete(args[1]);
-            nCaptions.Write(args[1]);*/
-
 
             if (PauseOnCompletion)
             {
                 Console.WriteLine("\nPress any key to exit the process...");
                 Console.ReadKey();
             }
-
-            /*var captions = new ClosedCaptions();
-            captions.Read(file);
-            Console.WriteLine($"Loaded file {Path.GetFileName(file)} ...");
-            PrintClosedCaptionData(captions);
-            //captions.Captions.RemoveRange(0,6851);
-            captions.Captions.ForEach(x => { x.Text += " TEST."; });
-            captions.Write(fileNew);
-
-            Console.WriteLine("\nWritten...\n");
-
-            var captionsNew = new ClosedCaptions();
-            captionsNew.Read(fileNew);
-            Console.WriteLine($"Loaded file {Path.GetFileName(fileNew)} ...");
-            PrintClosedCaptionData(captionsNew);*/
         }
 
         static bool ParseArgs(string[] args)
@@ -91,12 +59,10 @@ namespace HLACaptionReplacer
                 if (arg == "-c")
                 {
                     InputMode = InputMode.Custom;
-                    Console.Write("[Custom input file]");
                 }
                 else if (arg == "-r")
                 {
                     InputMode = InputMode.Replace;
-                    Console.Write("[Replacement input file]");
                 }
                 else if (arg == "-p")
                 {
@@ -147,6 +113,7 @@ namespace HLACaptionReplacer
                     break;
 
                 case InputMode.Replace:
+                    Console.WriteLine("[Caption Replacement Mode]");
                     ReplaceCaptions(captionFile, modifyFile);
                     break;
 
@@ -160,26 +127,41 @@ namespace HLACaptionReplacer
 
         public static void ReplaceCaptions(string captionFile, string modifyFile)
         {
-            var modifier = new CaptionModifierFile();
-
-            modifier.Read(modifyFile);
-            Console.WriteLine($"Modifier file has {modifier.DeletionCount} deletions and {modifier.ReplacementCount} replacements.\n");
-            var compiledCaptions = new ValveResourceFormat.ClosedCaptions.ClosedCaptions();
-            compiledCaptions.Read(captionFile);
-
-            var captionCompiler = new ClosedCaptions();
-            foreach (var caption in compiledCaptions)
+            try
             {
-                captionCompiler.Add(caption.Hash, caption.Text);
+                var compiledCaptions = new ValveResourceFormat.ClosedCaptions.ClosedCaptions();
+                compiledCaptions.Read(captionFile);
+
+                var captionCompiler = new ClosedCaptions();
+                foreach (var caption in compiledCaptions)
+                {
+                    captionCompiler.Add(caption.Hash, caption.Text);
+                }
+                Console.WriteLine($"Successfully read {captionCompiler.Captions.Count} compiled captions.\n");
+
+                var modifier = new CaptionModifierFile();
+                modifier.Read(modifyFile);
+                Console.WriteLine($"Modifier file has {modifier.DeletionCount} deletion(s) and {modifier.ReplacementCount} replacement(s).\n");
+                if (modifier.DeletionCount == 0 && modifier.ReplacementCount == 0) return;
+                var count = modifier.ModifyCaptions(captionCompiler);
+                Console.WriteLine($"Made {count.deleteCount}/{modifier.DeletionCount} deletions and {count.replaceCount}/{modifier.ReplacementCount} replacements changes.\n");
+
+                var outputPath = Path.Combine(Path.GetDirectoryName(captionFile), $"{Path.GetFileNameWithoutExtension(captionFile)}_new{Path.GetExtension(captionFile)}");
+                if (File.Exists(outputPath)) File.Delete(outputPath);
+                captionCompiler.Write(outputPath);
+                Console.WriteLine("Wrote new caption file:");
+                Console.WriteLine(outputPath);
+            }
+            catch (IOException e)
+            {
+                Console.WriteLine(e);
+            }
+            catch (UnauthorizedAccessException e)
+            {
+                Console.WriteLine(e);
             }
 
-            var count = modifier.ModifyCaptions(captionCompiler);
-            Console.WriteLine($"\nMade {count.deleteCount}/{modifier.DeletionCount} deletions and {count.replaceCount}/{modifier.ReplacementCount} replacements changes.");
 
-            var outputPath = Path.Combine(Path.GetDirectoryName(captionFile), $"{Path.GetFileNameWithoutExtension(captionFile)}_new{Path.GetExtension(captionFile)}");
-            compiledCaptions.Write(outputPath);
-            Console.WriteLine("\nWrote new caption file:");
-            Console.WriteLine(outputPath);
         }
 
         static public void PrintClosedCaptionData(ValveResourceFormat.ClosedCaptions.ClosedCaptions captions)
@@ -200,8 +182,8 @@ namespace HLACaptionReplacer
                 ".dat is recognized as a compiled caption file (e.g. closecaption_english.dat).\n" +
                 "\n" +
                 "Flags:\n" +
-                "-c     Custom file input\n" +
-                "-r     Replacement / removal file input\n" +
+                "-c     Custom file input mode\n" +
+                "-r     Replacement / removal file input mode [default mode when unspecified]\n" +
                 "-p     Wait for input after finishing\n";
             Console.WriteLine(help);
         }

@@ -3,6 +3,11 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <Version>0.0.1</Version>
+    <Authors>FrostSource</Authors>
+    <Company />
+    <Product />
   </PropertyGroup>
 
   <ItemGroup>
