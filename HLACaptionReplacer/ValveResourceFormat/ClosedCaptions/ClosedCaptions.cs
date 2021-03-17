@@ -17,6 +17,7 @@ namespace ValveResourceFormat.ClosedCaptions
         public UInt32 BlockSize { get; private set; }
         public UInt32 DirectorySize { get; private set; }
         public UInt32 DataOffset { get; private set; }
+        public byte[] EmptyBytes { get; private set; }
 
         public IEnumerator<ClosedCaption> GetEnumerator()
         {
@@ -59,7 +60,8 @@ namespace ValveResourceFormat.ClosedCaptions
             var reader = new BinaryReader(input);
             Captions = new List<ClosedCaption>();
 
-            if (reader.ReadUInt32() != MAGIC)
+            var magic = reader.ReadUInt32();
+            if (magic != MAGIC)
             {
                 throw new InvalidDataException("Given file is not a VCCD.");
             }
@@ -112,43 +114,67 @@ namespace ValveResourceFormat.ClosedCaptions
 
             var writer = new BinaryWriter(fs);
 
-            writer.Write((UInt32)MAGIC);
+            writer.Write((uint)MAGIC);
             writer.Write(Version);
             writer.Write(NumBlocks);
             writer.Write(BlockSize);
-            writer.Write((uint)Captions.Count);
+            writer.Write(DirectorySize);
             writer.Write(DataOffset);
 
             ushort runningOffset = 0;
             int prevBlocknum = 0;
+            int currentBlocknum = 0;
 
             // Probably could be inside the for loop above, but I'm unsure what the performance costs are of moving the position head manually a bunch compared to reading sequentually
             foreach (var caption in Captions)
             {
-                if (caption.Blocknum > prevBlocknum)
+                //caption.Text = "HUNGRY hungry HIPPOS";
+
+                /*var length = (ushort)Encoding.Unicode.GetByteCount(caption.Text + "\0");
+                if (runningOffset + length > BlockSize)
                 {
+                    currentBlocknum++;
                     runningOffset = 0;
-                    prevBlocknum = caption.Blocknum;
                 }
                 caption.Offset = runningOffset;
-                var length = (ushort)Encoding.Unicode.GetByteCount(caption.Text + "\0");
+                caption.Blocknum = currentBlocknum;
                 runningOffset += length;
 
                 writer.Write(caption.Hash);
-                if (Version >= 2) {
+                if (Version >= 2)
+                {
                     writer.Write(caption.UnknownV2);
                 }
                 writer.Write(caption.Blocknum);
                 writer.Write(caption.Offset);
-                writer.Write(length);
+                writer.Write(length);*/
+
+                //if (caption.Blocknum > prevBlocknum)
+                //{
+                //    runningOffset = 0;
+                //    prevBlocknum = caption.Blocknum;
+                //}
+                //caption.Offset = runningOffset;
+                //var length = (ushort)Encoding.Unicode.GetByteCount(caption.Text + "\0");
+                //runningOffset += length;
+
+                writer.Write(caption.Hash);
+                if (Version >= 2)
+                {
+                    writer.Write(caption.UnknownV2);
+                }
+                writer.Write(caption.Blocknum);
+                writer.Write(caption.Offset);
+                writer.Write(caption.Length);
             }
             foreach (var caption in Captions)
             {
                 writer.BaseStream.Position = DataOffset + (caption.Blocknum * BlockSize) + caption.Offset;
                 //writer.Write(caption.Text);
                 //caption.Text = writer.ReadNullTermString(Encoding.Unicode);
-                writer.Write(Encoding.Unicode.GetBytes(caption.Text));
-                writer.Write(0);
+                writer.Write(Encoding.Unicode.GetBytes(caption.Text + "\0"));
+                //writer.Write(Encoding.Unicode.GetBytes("!\0"));
+                //writer.Write(0);
             }
 
             writer.Close();

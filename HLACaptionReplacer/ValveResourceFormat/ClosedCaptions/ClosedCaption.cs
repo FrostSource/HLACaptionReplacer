@@ -12,5 +12,12 @@ namespace ValveResourceFormat.ClosedCaptions
         public ushort Offset { get; set; }
         public ushort Length { get; set; }
         public string Text { get; set; }
+
+        public void PrintCaption()
+        {
+            Console.WriteLine($"{Hash}\t{UnknownV2}\t{Blocknum}\t{Offset}\t{Length}\t{Text}");
+        }
+
+
     }
 }
