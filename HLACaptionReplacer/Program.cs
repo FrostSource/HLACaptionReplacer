@@ -3,6 +3,8 @@ using System.IO;
 using System.Text;
 using ValveResourceFormat.ClosedCaptions;
 
+#nullable enable
+
 namespace HLACaptionReplacer
 {
     public enum InputMode
@@ -146,7 +148,9 @@ namespace HLACaptionReplacer
                 var count = modifier.ModifyCaptions(captionCompiler);
                 Console.WriteLine($"Made {count.deleteCount}/{modifier.DeletionCount} deletions and {count.replaceCount}/{modifier.ReplacementCount} replacements changes.\n");
 
+#pragma warning disable CS8604 // Possible null reference argument.
                 var outputPath = Path.Combine(Path.GetDirectoryName(captionFile), $"{Path.GetFileNameWithoutExtension(captionFile)}_new{Path.GetExtension(captionFile)}");
+#pragma warning restore CS8604 // Possible null reference argument.
                 if (File.Exists(outputPath)) File.Delete(outputPath);
                 captionCompiler.Write(outputPath);
                 Console.WriteLine("Wrote new caption file:");
