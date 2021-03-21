@@ -15,7 +15,7 @@ namespace HLACaptionReplacer
 
     class Program
     {
-        // Currently defaults to true while testing
+        // Currently defaults to true while testing.
         public static bool PauseOnCompletion { get; set; } = true;
         public static InputMode InputMode { get; set; } = InputMode.Replace;
 
@@ -88,18 +88,17 @@ namespace HLACaptionReplacer
                 }
             }
 
-            if (captionFile == "" || modifyFile == "")
+            if (modifyFile == "")
             {
-                Console.WriteLine("\n!! Must provide both a caption file (.dat) and modifier file (.txt)");
+                Console.WriteLine("\n!! Must provide at least a modifier file (.txt)");
                 return false;
             }
 
-            if (!File.Exists(captionFile))
+            if (captionFile == "")
             {
-                Console.WriteLine("\n!! Caption file provided does not exist.");
-                Console.WriteLine(captionFile);
-                return false;
+                InputMode = InputMode.Custom;
             }
+
             if (!File.Exists(modifyFile))
             {
                 Console.WriteLine("\n!! Modifier file provided does not exist.");
@@ -112,10 +111,17 @@ namespace HLACaptionReplacer
             switch (InputMode)
             {
                 case InputMode.Custom:
-                    Console.WriteLine("Custom caption compiler not currently working, sorry!");
+                    Console.WriteLine("[Custom Caption Mode]");
+                    NewCaptionFile(modifyFile);
                     break;
 
                 case InputMode.Replace:
+                    if (!File.Exists(captionFile))
+                    {
+                        Console.WriteLine("\n!! Caption file provided does not exist.");
+                        Console.WriteLine(captionFile);
+                        return false;
+                    }
                     Console.WriteLine("[Caption Replacement Mode]");
                     ReplaceCaptions(captionFile, modifyFile);
                     break;
@@ -170,6 +176,42 @@ namespace HLACaptionReplacer
                 Console.WriteLine(e);
             }
 
+
+        }
+
+        public static void NewCaptionFile(string modifyFile)
+        {
+            try {
+                var captionCompiler = new ClosedCaptions();
+
+                var modifier = new CaptionModifierFile();
+                int invalids = modifier.Read(modifyFile);
+
+                Console.WriteLine($"Modifier file has {modifier.Rules.Count} rule(s).");
+                if (modifier.Rules.Count == 0) return;
+                var result = modifier.ModifyCaptions(captionCompiler);
+                Console.WriteLine($"Made the following modifications:\n" +
+                    $"{result.deleteCount} deletions.\n" +
+                    $"{result.replaceCount} replacements.\n" +
+                    $"{result.additionCount} additions.");
+
+#pragma warning disable CS8604 // Possible null reference argument.
+                //var outputPath = Path.Combine(Path.GetDirectoryName(captionFile), $"{Path.GetFileNameWithoutExtension(captionFile)}_new{Path.GetExtension(captionFile)}");
+                var outputPath = Path.Combine(Directory.GetCurrentDirectory(), "closecaptions_custom.dat");
+#pragma warning restore CS8604 // Possible null reference argument.
+                if (File.Exists(outputPath)) File.Delete(outputPath);
+                captionCompiler.Write(outputPath);
+                Console.WriteLine("Wrote new caption file:");
+                Console.WriteLine(outputPath);
+            }
+            catch (IOException e)
+            {
+                Console.WriteLine(e);
+            }
+            catch (UnauthorizedAccessException e)
+            {
+                Console.WriteLine(e);
+            }
 
         }
 
