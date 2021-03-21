@@ -15,7 +15,8 @@ namespace HLACaptionReplacer
 
     class Program
     {
-        public static bool PauseOnCompletion { get; set; } = false;
+        // Currently defaults to true while testing
+        public static bool PauseOnCompletion { get; set; } = true;
         public static InputMode InputMode { get; set; } = InputMode.Replace;
 
         static void Main(string[] args)
@@ -142,11 +143,15 @@ namespace HLACaptionReplacer
                 Console.WriteLine($"Successfully read {captionCompiler.Captions.Count} compiled captions.\n");
 
                 var modifier = new CaptionModifierFile();
-                modifier.Read(modifyFile);
-                Console.WriteLine($"Modifier file has {modifier.DeletionCount} deletion(s) and {modifier.ReplacementCount} replacement(s).\n");
-                if (modifier.DeletionCount == 0 && modifier.ReplacementCount == 0) return;
-                var count = modifier.ModifyCaptions(captionCompiler);
-                Console.WriteLine($"Made {count.deleteCount}/{modifier.DeletionCount} deletions and {count.replaceCount}/{modifier.ReplacementCount} replacements changes.\n");
+                int invalids = modifier.Read(modifyFile);
+
+                Console.WriteLine($"Modifier file has {modifier.Rules.Count} rule(s).");
+                if (modifier.Rules.Count == 0) return;
+                var result = modifier.ModifyCaptions(captionCompiler);
+                Console.WriteLine($"Made the following modifications:\n" +
+                    $"{result.deleteCount} deletions.\n" +
+                    $"{result.replaceCount} replacements.\n" +
+                    $"{result.additionCount} additions.");
 
 #pragma warning disable CS8604 // Possible null reference argument.
                 var outputPath = Path.Combine(Path.GetDirectoryName(captionFile), $"{Path.GetFileNameWithoutExtension(captionFile)}_new{Path.GetExtension(captionFile)}");

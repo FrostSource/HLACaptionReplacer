@@ -1,11 +1,34 @@
 ﻿
-// comments work
+// This is an example modifier file to 
 
-//delete darkness vo
+// This is an example modifier file. It uses the following format:
+// <token> <text>
+// Any white space at the start and end is trimmed.
+// Blank lines are ignored.
+// Basic comments work.
+
+// Drag the modifier file (this file) and the compiled caption file (e.g. closecaption_english.dat)
+// onto HLACaptionReplace.exe and it will create a new file (e.g. closecaption_english_new.dat)
+
+
+// Delete a caption by using the event name or hash as the token (see further below for hash example)
 
 vo.01_13035
 
-// replace some lines
+// Replace lines by adding the replacement text next to the token
+
 vo.05_02219 <HEADSET><clr:210,100,210>Example replaced caption
 vo.01_13036 <clr:100,190,100>Umm… do you have <i>anything<i> to say to me mate??
 vo.05_00158 <HEADSET><clr:210,100,210>Ah! Check this!<cr>Alyx, you one fine hottie, ya know that?
+
+// Delete by hash
+3640202163
+
+// Replace by hash
+
+1266618350 <i>Replaced by hash<i>
+
+// Add captions that don't exist by using your own sound event name and the text.
+// (captions for custom sound events don't seem to play for some reason so this is for testing)
+
+vo.OwnVoice MyOwnLine

@@ -33,16 +33,21 @@ namespace HLACaptionReplacer
                 definition = value + '\0';
                 Length = (ushort)Encoding.Unicode.GetByteCount(definition);
                 DefinitionHash = ValveResourceFormat.Crc32.Compute(Encoding.Unicode.GetBytes(value));
+                RawDefinition = value;
             }
         }
 
+        public string RawDefinition { get; private set; }
 
-        public ClosedCaption()
+
+        public ClosedCaption():this("", "")
         {
-            Definition = "";
         }
 
+        // How do you solve this warning? The backing field is definitely being set.
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public ClosedCaption(string sndevt, string definition)
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         {
             SoundEvent = sndevt;
             Definition = definition;

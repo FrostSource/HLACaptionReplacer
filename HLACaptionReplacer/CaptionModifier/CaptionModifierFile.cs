@@ -17,16 +17,14 @@ namespace HLACaptionReplacer
     class CaptionModifierFile
     {
         public List<CaptionModifierRule> Rules { get; private set; } = null!;
-        public int DeletionCount { get; private set; }
-        public int ReplacementCount { get; private set; }
 
-        public void Read(string filename)
+        public int Read(string filename)
         {
             var sr = new StreamReader(filename);
 
             Rules = new List<CaptionModifierRule>();
-            DeletionCount = 0;
-            ReplacementCount = 0;
+
+            int invalids = 0;
 
             int lineCount = 0;
             string? line;
@@ -42,29 +40,39 @@ namespace HLACaptionReplacer
                 if ((parsed = ParseString(line.Trim())).sndevt == null)
                 {
                     Console.WriteLine($"Modification line {lineCount} is invalid!");
+                    invalids++;
                     continue;
                 }
 
-                ModificationType type;
+                var rule = new CaptionModifierRule();
+
+                // If no text is provided then this is a deletion rule
                 if (parsed.text == null)
                 {
-                    type = ModificationType.Delete;
-                    DeletionCount++;
+                    rule.ModificationType = ModificationType.Delete;
                 }
                 else
                 {
-                    type = ModificationType.Replace;
-                    ReplacementCount++;
+                    rule.ModificationType = ModificationType.Replace;
+                    rule.Caption.Definition = parsed.text;
+                }
+
+                // Assume a valid unsigned integer is a sound event hash
+                if (uint.TryParse(parsed.sndevt, out uint hash))
+                {
+                    rule.Caption.SoundEventHash = hash;
+                }
+                else
+                {
+                    rule.Caption.SoundEvent = parsed.sndevt;
                 }
 
                 // Add new modifier
-                Rules.Add(new CaptionModifierRule()
-                {
-                    Hash = ClosedCaptions.ComputeHash(parsed.sndevt),
-                    Text = parsed.text,
-                    ModificationType = type
-                });
+                Rules.Add(rule);
+
             }
+
+            return invalids;
         }
 
         public (string? sndevt, string? text) ParseString(string input)
@@ -75,6 +83,7 @@ namespace HLACaptionReplacer
             //    .Skip(1)
             //    .Select(m => m.Value)
             //    .ToList();
+
             var match = Regex.Match(input, @"^(\S+)(?:[ \t]+(.+))?$", RegexOptions.Compiled);
             var groups = match.Groups;
             var sndevt = groups[1].Success ? groups[1].Value : null;
@@ -83,15 +92,19 @@ namespace HLACaptionReplacer
             return (sndevt, text);
         }
 
-        public (int replaceCount, int deleteCount) ModifyCaptions(ClosedCaptions captions)
+        public (int replaceCount, int deleteCount, int additionCount) ModifyCaptions(ClosedCaptions captions)
         {
+            var additions = new List<CaptionModifierRule>();
+
             int replaceCount = 0;
             int deleteCount = 0;
-            foreach (var caption in captions.Captions)
+            int additionCount = 0;
+            foreach (var rule in Rules)
             {
-                foreach (var rule in Rules)
+                bool isAddition = true;
+                foreach (var caption in captions.Captions)
                 {
-                    if (caption.SoundEventHash == rule.Hash)
+                    if (caption.SoundEventHash == rule.Caption.SoundEventHash)
                     {
                         // Deleting actually means nullifying the string until we figure out
                         // why changing blocks messes up captions
@@ -99,7 +112,10 @@ namespace HLACaptionReplacer
                         {
                             if (!caption.IsBlank)
                             {
-                                caption.Definition = new string('b', (caption.Length - 2) / 2);
+                                // What's the best way to erase a caption file but keep the hash there?
+                                // can we just remove the caption entirely?
+                                caption.Definition = "";
+                                //caption.Definition = new string('b', (caption.Length - 2) / 2);
                                 //Console.WriteLine(Encoding.Unicode.GetBytes(new string('\0', (caption.Length - 2))).Length);
                                 //caption.Definition = "\0";
                                 deleteCount++;
@@ -107,14 +123,28 @@ namespace HLACaptionReplacer
                         }
                         else
                         {
-                            caption.Definition = rule.Text;
+                            caption.Definition = rule.Caption.Definition;
                             replaceCount++;
                         }
+
+                        isAddition = false;
                     }
+                }
+
+                if (isAddition)
+                {
+                    additions.Add(rule);
+                    additionCount++;
                 }
             }
 
-            return (replaceCount, deleteCount);
+            // Add the additions after the loops have ended
+            foreach (var addition in additions)
+            {
+                captions.Add(addition.Caption);
+            }
+
+            return (replaceCount, deleteCount, additionCount);
         }
     }
 }

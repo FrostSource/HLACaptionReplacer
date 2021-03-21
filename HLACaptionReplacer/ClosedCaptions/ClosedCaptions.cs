@@ -16,6 +16,10 @@ namespace HLACaptionReplacer
 
         public List<ClosedCaption> Captions { get; private set; } = new List<ClosedCaption>();
 
+        public void Add(ClosedCaption caption)
+        {
+            Add(caption.SoundEvent, caption.RawDefinition);
+        }
         public void Add(string sndevt, string definition)
         {
             Captions.Add(new ClosedCaption()
@@ -41,13 +45,16 @@ namespace HLACaptionReplacer
             writer.Write(MAGIC);
             writer.Write(Version);
             // numblocks placeholder, come back to write this later
-            writer.Write(new byte[4]);
+            writer.Write((uint) 0);
             writer.Write(BlockSize);
             writer.Write((uint)Captions.Count);
             // 16 is the number of bytes each caption header uses
             // 24 is bytes written above plus one below
             //472=valve extra padding bytes?
-            uint dataOffset = (uint)(24 + 472 + (Captions.Count * 16));
+            // -16 for adesi
+            //uint dataOffset = (uint)(24 + (472 - 16) + (Captions.Count * 16));
+            // 110592 hard coded offset??
+            uint dataOffset = 110592;
             writer.Write(dataOffset);
 
             // Header information for each caption
@@ -101,12 +108,16 @@ namespace HLACaptionReplacer
                 runningOffset += caption.Length;
             }
 
-            // for some reason caption files have 2180 bytes at the end
-            writer.Write(new byte[2180]);
-
             // write number of blocks to header now that we know how many
             writer.BaseStream.Position = 8;
-            writer.Write(blockNum + 1);
+            uint numBlocks = (uint)(blockNum + 1);
+            writer.Write(numBlocks);
+
+            // for some reason caption files have 2180 bytes at the end
+            //writer.Write(new byte[2180]);
+            // This is Adesi code
+            writer.BaseStream.Position = dataOffset + (numBlocks * BlockSize) - (BlockSize / 256) + 31;
+            writer.Write(new byte());
 
             writer.Close();
             fs.Close();
