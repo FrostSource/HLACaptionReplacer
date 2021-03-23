@@ -72,9 +72,10 @@ namespace HLACaptionReplacer
                             me.IsInitializingLanguage = true;
                             me.SelectedLanguage = (string)e.OldValue;
                             me.IsInitializingLanguage = false;
-                            break;
+                            return;
                     }
                 }
+                me.LoadCaptionData();
             }
         }
 
@@ -119,11 +120,48 @@ namespace HLACaptionReplacer
                 this.SetValue(CaptionsProperty, value);
             }
         }
+        void LoadCaptionData()
+        {
+            string addonFolder = Steam.SteamData.GetHLAAddOnFolder(AddOn);
+            SoundNames = new ObservableCollection<string>();
+            hashToName = new Dictionary<uint, string>();
+            foreach (var eventFiles in new DirectoryInfo(addonFolder).GetFiles("*." + Steam.SteamData.SoundEventsExtension, SearchOption.AllDirectories))
+            {
+                foreach (var soundName in AAT.AddonHelper.DeserializeFile(eventFiles.FullName))
+                {
+                    SoundNames.Add(soundName.EventName);
+                    hashToName.Add(ValveResourceFormat.Crc32.Compute(Encoding.UTF8.GetBytes(soundName.EventName)), soundName.EventName);
+                }
+            }
 
+            //Look for and load any caption file.
+            string targetPath = System.IO.Path.Combine(Steam.SteamData.GetHLAInstallFolder(), Steam.SteamData.HLAWIPAddonGamePath, AddOn, Steam.SteamData.CaptionFolder);
+            if (Directory.Exists(targetPath))
+            {
+                foreach (var captionFiles in new DirectoryInfo(targetPath).GetFiles(string.Format(workingCCFileFormat, SelectedLanguage + "_custom"), SearchOption.AllDirectories))
+                {
+                    var closedCaptions = new ClosedCaptions();
+                    using (var stream = captionFiles.OpenRead())
+                    {
+                        closedCaptions.Read(stream);
+                    }
+                    foreach (var caption in closedCaptions.Captions)
+                    {
+                        var cap = new ClosedCaptionDependencyObject(caption);
+                        if (hashToName.ContainsKey(caption.SoundEventHash))
+                        {
+                            cap.Name = hashToName[caption.SoundEventHash];
+                        }
+                        Captions.Add(cap);
+                    }
+                }
+            }
+
+        }
         public static readonly DependencyProperty AddOnProperty =
             DependencyProperty.Register(nameof(AddOn), typeof(string),
             typeof(MainWindow), new PropertyMetadata(OnAddOnChanged));
-
+        
         private static void OnAddOnChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             MainWindow me = d as MainWindow;
@@ -131,40 +169,8 @@ namespace HLACaptionReplacer
             {
                 //Get list of soundevents to create captions from.
 
-                string addonFolder = Steam.SteamData.GetHLAAddOnFolder(me.AddOn);
-                me.SoundNames = new ObservableCollection<string>();
-
-                foreach (var eventFiles in new DirectoryInfo(addonFolder).GetFiles("*." + Steam.SteamData.SoundEventsExtension, SearchOption.AllDirectories))
-                {
-                    foreach (var soundName in AAT.AddonHelper.DeserializeFile(eventFiles.FullName))
-                    {
-                        me.SoundNames.Add(soundName.EventName);
-                        me.hashToName.Add(ValveResourceFormat.Crc32.Compute(Encoding.UTF8.GetBytes(soundName.EventName)), soundName.EventName);
-                    }
-                }
-
-                //Look for and load any caption file.
-                string targetPath = System.IO.Path.Combine(Steam.SteamData.GetHLAInstallFolder(), Steam.SteamData.HLAWIPAddonGamePath, me.AddOn, Steam.SteamData.CaptionFolder);
-                if (Directory.Exists(targetPath))
-                {
-                    foreach (var captionFiles in new DirectoryInfo(targetPath).GetFiles(string.Format(workingCCFileFormat, me.SelectedLanguage + "_custom"), SearchOption.AllDirectories))
-                    {
-                        var closedCaptions = new ClosedCaptions();
-                        using (var stream = captionFiles.OpenRead())
-                        {
-                            closedCaptions.Read(stream);
-                        }
-                        foreach (var caption in closedCaptions.Captions)
-                        {
-                            var cap = new ClosedCaptionDependencyObject(caption);
-                            if (me.hashToName.ContainsKey(caption.SoundEventHash))
-                            {
-                                cap.Name = me.hashToName[caption.SoundEventHash];
-                            }
-                            me.Captions.Add(cap);
-                        }
-                    }
-                }
+                
+                me.LoadCaptionData();
             }
         }
         
