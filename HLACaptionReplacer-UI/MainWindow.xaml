@@ -1,0 +1,70 @@
+﻿<Window x:Class="HLACaptionReplacer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:HLACaptionReplacer"
+        mc:Ignorable="d" Name="uc" Loaded="OnLoaded"
+        Title="HLA Caption Replacer" Height="450" Width="800">
+    <DockPanel>
+        <StackPanel Orientation="Horizontal" DockPanel.Dock="Top">
+           
+            <Button Content="Select Add On" Click="OnNewAddOn" Padding="5,5,5,5" />
+            <Button Content="Save" Click="OnSave" Padding="5,5,5,5" />
+            <Button Content="Add" Click="OnAdd" Padding="5,5,5,5" />
+            <TextBlock Text="Selected Language:" VerticalAlignment="Center" Padding="5,5,5,5" />
+            <ComboBox ItemsSource="{Binding ElementName=uc, Path=SupportedLanguages}"
+                      Width="110"
+                      SelectedItem="{Binding SelectedLanguage, ElementName=uc}" />
+            <TextBlock Margin="130,0,0,0" FontWeight="Bold" Text="Add On:" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                <TextBlock VerticalAlignment="Center" Padding="5,0,5,0" Text="{Binding AddOn, ElementName=uc, Mode=OneWay}" />
+            
+        </StackPanel>
+        <ListView Name="theListView"
+        AlternationCount="2" 
+        DockPanel.Dock="Top" ItemsSource="{Binding Captions, Mode=OneWay, ElementName=uc}">
+
+            <ListView.View>
+                <GridView>
+
+                    <GridViewColumn Width="80">
+                        <GridViewColumnHeader />
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                    <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                        <Button
+                                            Content="Delete" Click="OnDeleteCaption" CommandParameter="{Binding}" >
+                                        </Button>
+                                    </StackPanel>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
+                    <GridViewColumn Width="200">
+                        <GridViewColumnHeader >
+                            <TextBlock Text="Sound Event Name" />
+                        </GridViewColumnHeader>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <ComboBox MinWidth="170"
+                                    SelectedItem="{Binding Path=Name, Mode=TwoWay}"
+                                    ItemsSource="{Binding SoundNames, ElementName=uc}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
+                    <GridViewColumn Width="400">
+                        <GridViewColumnHeader >
+                            <TextBlock Text="Caption" />
+                        </GridViewColumnHeader>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox MinWidth="370" Text="{Binding Path=CaptionText, Mode=TwoWay}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+    </DockPanel>
+</Window>
