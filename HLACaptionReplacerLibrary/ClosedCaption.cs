@@ -28,7 +28,11 @@ namespace HLACaptionReplacer
             set
             {
                 soundEvent = value;
-                SoundEventHash = ValveResourceFormat.Crc32.Compute(Encoding.UTF8.GetBytes(soundEvent));
+                if (!string.IsNullOrEmpty(soundEvent))
+                {
+                    SoundEventHash = ValveResourceFormat.Crc32.Compute(Encoding.UTF8.GetBytes(soundEvent));
+                }
+
             }
         }
 
