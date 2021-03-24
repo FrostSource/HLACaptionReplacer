@@ -47,8 +47,8 @@
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <ComboBox MinWidth="170"
-                                    SelectedItem="{Binding Path=Name, Mode=TwoWay}"
-                                    ItemsSource="{Binding SoundNames, ElementName=uc}" />
+                                    SelectedItem="{Binding Path=SoundEvent, Mode=TwoWay}"
+                                    ItemsSource="{Binding SoundEvents, ElementName=uc}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>

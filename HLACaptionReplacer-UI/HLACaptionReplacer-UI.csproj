@@ -8,11 +8,31 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="IBM.WatsonDeveloperCloud.SpeechToText.Temp" Version="0.2.1" />
+    <ProjectReference Include="..\HLACaptionReplacerLibrary\HLACaptionReplacerLibrary.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\HLACaptionReplacerLibrary\HLACaptionReplacerLibrary.csproj" />
+    <None Remove="C:\Users\russj.DESKTOP-I72395T\.nuget\packages\vosk\0.3.19\build\lib\win-x64\libgcc_s_seh-1.dll" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="C:\Users\russj.DESKTOP-I72395T\.nuget\packages\vosk\0.3.19\build\lib\win-x64\libstdc++-6.dll" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="C:\Users\russj.DESKTOP-I72395T\.nuget\packages\vosk\0.3.19\build\lib\win-x64\libvosk.dll" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="C:\Users\russj.DESKTOP-I72395T\.nuget\packages\vosk\0.3.19\build\lib\win-x64\libwinpthread-1.dll" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="C:\Users\russj.DESKTOP-I72395T\.nuget\packages\vosk\0.3.19\build\lib\win-x64\libgcc_s_seh-1.dll" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="C:\Users\russj.DESKTOP-I72395T\.nuget\packages\vosk\0.3.19\build\lib\win-x64\libgcc_s_seh-1.dll" />
   </ItemGroup>
 
 </Project>

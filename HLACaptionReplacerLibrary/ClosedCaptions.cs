@@ -122,7 +122,8 @@ namespace HLACaptionReplacer
                 // 16 is the number of bytes each caption header uses
                 // 24 is bytes written above plus one below
                 //472=valve extra padding bytes?
-                uint dataOffset = (uint)(baseHeader + paddingBytes + (Captions.Count * headerSize));
+                //uint dataOffset = (uint)(baseHeader + paddingBytes + (Captions.Count * headerSize));
+                uint dataOffset = (uint)(baseHeader + (Captions.Count * headerSize));
                 writer.Write(dataOffset);
 
                 // Header information for each caption
@@ -178,8 +179,11 @@ namespace HLACaptionReplacer
                     runningOffset += caption.Length;
                 }
 
-                // for some reason caption files have 2180 bytes at the end
-                //writer.Write(new byte[endPaddingBytes]);
+                var leftOver = BlockSize - runningOffset;
+                if (leftOver > 0)
+                {
+                    writer.Write(new byte[leftOver]);
+                }
 
                 // write number of blocks to header now that we know how many
                 writer.BaseStream.Position = 8;
@@ -189,8 +193,8 @@ namespace HLACaptionReplacer
                 // for some reason caption files have 2180 bytes at the end
                 //writer.Write(new byte[2180]);
                 // This is Adesi code
-                writer.BaseStream.Position = dataOffset + (numBlocks * BlockSize) - (BlockSize / 256) + 31;
-                writer.Write(new byte());
+                //writer.BaseStream.Position = dataOffset + (numBlocks * BlockSize) - (BlockSize / 256) + 31;
+                //writer.Write(new byte());
 
 
             }
