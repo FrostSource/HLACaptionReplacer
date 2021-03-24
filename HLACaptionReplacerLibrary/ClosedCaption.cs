@@ -11,45 +11,56 @@ namespace HLACaptionReplacer
         private string definition;
         private string soundEvent;
 
+        /// <summary>
+        /// Gets the length of the text definition.
+        /// </summary>
         public ushort Length { get; private set; }
+        /// <summary>
+        /// Gets or sets the hash value of the sound event name.
+        /// </summary>
+        /// <remarks>
+        /// Set this property ONLY if you do not know the sound event name.
+        /// </remarks>
         public uint SoundEventHash { get; set; }
-        // Previous UnknownV2
-        public uint DefinitionHash { get; set; } = 0;
-
-        public uint Blocknum { get; set; }
-
-        public ushort Offset { get; set; }
-
-        internal ushort ReadLength { get; set; }
-
+        /// <summary>
+        /// Gets the hash value of the text definition.
+        /// </summary>
+        public uint DefinitionHash { get; private set; } = 0;
+        /// <summary>
+        /// Gets or sets the sound event name that this caption relates to.
+        /// </summary>
         public string SoundEvent
         {
             get => soundEvent;
             set
             {
                 soundEvent = value;
+                // Why is this needed? Should throw exception if string is empty instead of allowing^?
                 if (!string.IsNullOrEmpty(soundEvent))
                 {
                     SoundEventHash = ValveResourceFormat.Crc32.Compute(Encoding.UTF8.GetBytes(soundEvent));
                 }
-
             }
         }
-
+        /// <summary>
+        /// Gets or sets the text definition of the caption.
+        /// </summary>
         public string Definition
         {
             get => definition;
             set
             {
+                //TODO: Check if given string has a null terminator before adding one?
                 definition = value + '\0';
                 Length = (ushort)Encoding.Unicode.GetByteCount(definition);
                 DefinitionHash = ValveResourceFormat.Crc32.Compute(Encoding.Unicode.GetBytes(value));
                 RawDefinition = value;
             }
         }
-
+        /// <summary>
+        /// Gets the text definition of the caption without the null terminator.
+        /// </summary>
         public string RawDefinition { get; private set; }
-
 
         public ClosedCaption():this("", "")
         {
@@ -64,11 +75,14 @@ namespace HLACaptionReplacer
             Definition = definition;
         }
 
+        /// <summary>
+        /// Gets a value indicating whether the text definition is empty.
+        /// </summary>
         public bool IsBlank
         {
             get
             {
-                return Definition == "\0" || Definition == "";
+                return RawDefinition == "";
             }
         }
     }
