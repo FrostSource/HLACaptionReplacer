@@ -1,0 +1,1 @@
+﻿vo.ownvoice <clr:210,100,210>MyOwnLine<cr><clr:100,20,10>with fancy colors

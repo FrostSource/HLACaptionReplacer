@@ -10,7 +10,7 @@ namespace HLACaptionReplacer
     class ClosedCaptions
     {
         public const uint MAGIC = 0x44434356; // "VCCD"
-        public const uint Version = 2;
+        public uint Version { get; set; } = 2;
         // How is block size determined?
         public const uint BlockSize = 8192;
 
@@ -37,6 +37,27 @@ namespace HLACaptionReplacer
             });
         }
 
+        public void Insert(int index, ClosedCaption caption)
+        {
+            Insert(index, caption.SoundEvent, caption.RawDefinition);
+        }
+        public void Insert(int index, string sndevt, string definition)
+        {
+            Captions.Insert(index, new ClosedCaption()
+            {
+                SoundEvent = sndevt,
+                Definition = definition
+            });
+        }
+        public void Insert(int index, uint hash, string definition)
+        {
+            Captions.Insert(index, new ClosedCaption()
+            {
+                SoundEventHash = hash,
+                Definition = definition
+            });
+        }
+
         public void Write(string filename)
         {
             var fs = new FileStream(filename, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite);
@@ -44,8 +65,7 @@ namespace HLACaptionReplacer
 
             writer.Write(MAGIC);
             writer.Write(Version);
-            // numblocks placeholder, come back to write this later
-            writer.Write((uint) 0);
+            writer.Write((uint) 0); // numblocks placeholder, come back to write this later
             writer.Write(BlockSize);
             writer.Write((uint)Captions.Count);
             // 16 is the number of bytes each caption header uses
@@ -53,8 +73,9 @@ namespace HLACaptionReplacer
             //472=valve extra padding bytes?
             // -16 for adesi
             //uint dataOffset = (uint)(24 + (472 - 16) + (Captions.Count * 16));
+            uint dataOffset = (uint)(24 + (Captions.Count * 16));
             // 110592 hard coded offset??
-            uint dataOffset = 110592;
+            //uint dataOffset = 110592;
             writer.Write(dataOffset);
 
             // Header information for each caption
@@ -108,6 +129,12 @@ namespace HLACaptionReplacer
                 runningOffset += caption.Length;
             }
 
+            var leftOver = BlockSize - runningOffset;
+            if (leftOver > 0)
+            {
+                writer.Write(new byte[leftOver]);
+            }
+
             // write number of blocks to header now that we know how many
             writer.BaseStream.Position = 8;
             uint numBlocks = (uint)(blockNum + 1);
@@ -116,8 +143,8 @@ namespace HLACaptionReplacer
             // for some reason caption files have 2180 bytes at the end
             //writer.Write(new byte[2180]);
             // This is Adesi code
-            writer.BaseStream.Position = dataOffset + (numBlocks * BlockSize) - (BlockSize / 256) + 31;
-            writer.Write(new byte());
+            //writer.BaseStream.Position = dataOffset + (numBlocks * BlockSize) - (BlockSize / 256) + 31;
+            //writer.Write(new byte());
 
             writer.Close();
             fs.Close();

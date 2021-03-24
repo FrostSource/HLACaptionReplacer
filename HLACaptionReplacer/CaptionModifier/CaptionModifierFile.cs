@@ -18,8 +18,13 @@ namespace HLACaptionReplacer
     {
         public List<CaptionModifierRule> Rules { get; private set; } = null!;
 
+        public string FileName { get; private set; } = "";
+        public string FilePath { get; private set; } = "";
+
         public int Read(string filename)
         {
+            FileName = Path.GetFileNameWithoutExtension(filename);
+            FilePath = Path.GetDirectoryName(filename);
             var sr = new StreamReader(filename);
 
             Rules = new List<CaptionModifierRule>();
@@ -141,10 +146,18 @@ namespace HLACaptionReplacer
             // Add the additions after the loops have ended
             foreach (var addition in additions)
             {
-                captions.Add(addition.Caption);
+                captions.Insert(0, addition.Caption);
             }
 
             return (replaceCount, deleteCount, additionCount);
+        }
+
+        public void AddAllToClosedCaptions(ClosedCaptions captions)
+        {
+            foreach (var rule in Rules)
+            {
+                captions.Add(rule.Caption);
+            }
         }
     }
 }

@@ -1,0 +1,7 @@
+//<token> <text>
+
+captain.captain_01 <len:7><clr:240,240,240>Hello! My name is Captain Dickhead and I want to tell you about custom captions.
+captain.captain_02 <len:4><clr:240,240,240>You can <clr:209,31,25>have <clr:92,209,25>cool <clr:25,100,209>colors <clr:240,240,240>and <I>other<I> <B>markup<B> I guess.
+captain.captain_03 <len:2><clr:240,240,240>Thank you for listening…
+captain.captain_04 <len:3><clr:240,240,240>I am going back to my safe space now.
+bigboi.explode <sfx><clr:255,176,0>[BIG BOI EXPLOSION]
