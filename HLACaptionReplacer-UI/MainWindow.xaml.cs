@@ -139,6 +139,7 @@ namespace HLACaptionReplacer
             string targetPath = System.IO.Path.Combine(Steam.SteamData.GetHLAInstallFolder(), Steam.SteamData.HLAWIPAddonGamePath, AddOn, Steam.SteamData.CaptionFolder);
             if (Directory.Exists(targetPath))
             {
+                // captionsFiles should be named captionFile?
                 foreach (var captionFiles in new DirectoryInfo(targetPath).GetFiles(string.Format(workingCCFileFormat, SelectedLanguage + "_custom"), SearchOption.AllDirectories))
                 {
                     var closedCaptions = new ClosedCaptions();

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -8,19 +9,25 @@ using ValveResourceFormat;
 
 namespace HLACaptionReplacer
 {
-    public class ClosedCaptions
+    public class ClosedCaptions : IEnumerable<ClosedCaption>
     {
         private const uint MAGIC = 0x44434356; // "VCCD"
         private const uint Version = 2;
 
-        /// <summary>
-        /// 
-        /// </summary>
         public uint BlockSize { get; set; } = 8192;  //TODO: BlockSize currently temporarily settable to test different values.  Will be made const once confident of standard size of 8192.
 
+        //TODO: Should this property be private and force to use as enumerator?
         public List<ClosedCaption> Captions { get; private set; } = new List<ClosedCaption>();
+        /// <summary>
+        /// Gets the number of captions in this object.
+        /// </summary>
+        public int Count { get => Captions.Count; }
 
-        public ClosedCaption? this[string key]
+        public IEnumerator<ClosedCaption> GetEnumerator()
+        {
+            return ((IEnumerable<ClosedCaption>)Captions).GetEnumerator();
+        }
+        public ClosedCaption this[string key]
         {
             get
             {
@@ -237,6 +244,11 @@ namespace HLACaptionReplacer
             {
                 Write(fs);
             }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IEnumerable<ClosedCaption>)Captions).GetEnumerator();
         }
 
     }

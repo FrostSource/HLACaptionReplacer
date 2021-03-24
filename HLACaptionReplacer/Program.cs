@@ -1,11 +1,11 @@
 ﻿using System;
 using System.IO;
 using System.Text;
-using ValveResourceFormat.ClosedCaptions;
+using HLACaptionReplacer;
 
 #nullable enable
 
-namespace HLACaptionReplacer
+namespace HLACaptionCompiler
 {
     public enum InputMode
     {
@@ -53,9 +53,9 @@ namespace HLACaptionReplacer
                 PauseOnCompletion = true;
                 return false;
             }
-
-            string captionFile = "";
-            string modifyFile = "";
+            
+            string captionPath = "";
+            string modifyPath = "";
 
             foreach (var arg in args)
             {
@@ -66,11 +66,11 @@ namespace HLACaptionReplacer
                 }
                 else if (Path.GetExtension(arg) == ".dat")
                 {
-                    captionFile = arg;
+                    captionPath = arg;
                 }
                 else if (Path.GetExtension(arg) == ".txt")
                 {
-                    modifyFile = arg;
+                    modifyPath = arg;
                 }
 
                 else
@@ -86,36 +86,25 @@ namespace HLACaptionReplacer
                 return false;
             }*/
 
-            if (modifyFile == "" && captionFile == "")
+            var modifyFile = new FileInfo(modifyPath);
+            var captionFile = new FileInfo(captionPath);
+
+            if (modifyFile == null && captionFile == null)
             {
                 PrintHelp();
                 PauseOnCompletion = true;
                 return false;
             }
 
-            // Cloning compiled captions and displaying
-            if (modifyFile == "")
-            {
-                if (!File.Exists(captionFile))
-                {
-                    Console.WriteLine("\n!! Caption file provided does not exist.");
-                    Console.WriteLine(captionFile);
-                    return false;
-                }
-                CloneCaptionFile(captionFile);
-                PauseOnCompletion = true;
-                return true;
-            }
-
             // Loading the modifier file
-            if (!File.Exists(modifyFile))
+            if (modifyFile == null)
             {
                 Console.WriteLine("\n!! Modifier file provided does not exist.");
-                Console.WriteLine(modifyFile);
+                Console.WriteLine(modifyPath);
                 return false;
             }
             var modifier = new CaptionModifierFile();
-            int invalids = modifier.Read(modifyFile);
+            int invalids = modifier.Read(modifyPath);
             if (invalids > 0)
                 Console.WriteLine($"Modifier file has {modifier.Rules.Count} rule(s) and {invalids} invalid lines.");
             else
@@ -126,7 +115,7 @@ namespace HLACaptionReplacer
             Console.WriteLine("\n");
 
             // New custom caption file mode
-            if (captionFile == "")
+            if (captionPath == "")
             {
                 Console.WriteLine("[Custom Caption Mode]");
                 CustomCaptionFile(modifier);
@@ -134,10 +123,10 @@ namespace HLACaptionReplacer
             }
 
             // Replacing and adding captions to a compiled file
-            if (!File.Exists(captionFile))
+            if (captionFile == null)
             {
                 Console.WriteLine("!! Caption file provided does not exist.");
-                Console.WriteLine(captionFile);
+                Console.WriteLine(captionPath);
                 return false;
             }
 
@@ -147,20 +136,16 @@ namespace HLACaptionReplacer
             return true;
         }
 
-        public static void ReplaceCaptions(CaptionModifierFile modifier, string captionFile)
+        public static void ReplaceCaptions(CaptionModifierFile modifier, FileInfo captionFile)
         {
-            var compiledCaptions = new ValveResourceFormat.ClosedCaptions.ClosedCaptions();
-            compiledCaptions.Read(captionFile);
-
-            var captionCompiler = new ClosedCaptions();
-            captionCompiler.Version = compiledCaptions.Version;
-            foreach (var caption in compiledCaptions)
+            var captions = new ClosedCaptions();
+            using (var stream = captionFile.OpenRead())
             {
-                captionCompiler.Add(caption.Hash, caption.Text);
+                captions.Read(stream);
             }
-            Console.WriteLine($"Successfully read {captionCompiler.Captions.Count} compiled captions.\n");
+            Console.WriteLine($"Successfully read {captions.Count} compiled captions.\n");
             
-            var result = modifier.ModifyCaptions(captionCompiler);
+            var result = modifier.ModifyCaptions(captions);
             Console.WriteLine($"Made the following modifications:\n" +
                 $"{result.deleteCount} deletions.\n" +
                 $"{result.replaceCount} replacements.\n" +
@@ -171,7 +156,7 @@ namespace HLACaptionReplacer
             var outputPath = Path.Combine(Directory.GetCurrentDirectory(), $"closecaption_{modifier.FileName}.dat");
 #pragma warning restore CS8604 // Possible null reference argument.
 
-            WriteCaptionFile(captionCompiler, outputPath);
+            WriteCaptionFile(captions, outputPath);
         }
 
         public static void CustomCaptionFile(CaptionModifierFile modifier)
@@ -186,6 +171,21 @@ namespace HLACaptionReplacer
             WriteCaptionFile(customCaptions, outputPath);
         }
 
+        public static void CloneCaptionFile(FileInfo captionFile)
+        {
+            var captions = new ClosedCaptions();
+            using (var stream = captionFile.OpenRead())
+            {
+                captions.Read(stream);
+            }
+
+#pragma warning disable CS8604 // Possible null reference argument.
+            var outputPath = Path.Combine(captionFile.DirectoryName, $"{captionFile.Name}_new{captionFile.Extension}");
+#pragma warning restore CS8604 // Possible null reference argument.
+
+            WriteCaptionFile(captions, outputPath);
+        }
+
         public static void WriteCaptionFile(ClosedCaptions captions, string filename)
         {
             // Need a better way to clear the file
@@ -194,57 +194,6 @@ namespace HLACaptionReplacer
             captions.Write(filename);
             Console.WriteLine("Wrote new caption file:");
             Console.WriteLine(Path.GetFullPath(filename));
-        }
-
-        public static void CloneCaptionFile(string captionFile)
-        {
-            var compiledCaptions = new ValveResourceFormat.ClosedCaptions.ClosedCaptions();
-            compiledCaptions.Read(captionFile);
-
-            PrintClosedCaptionData(compiledCaptions);
-
-            var captionCompiler = new ClosedCaptions();
-            captionCompiler.Version = compiledCaptions.Version;
-            foreach (var caption in compiledCaptions)
-            {
-                captionCompiler.Add(caption.Hash, caption.Text);
-            }
-
-#pragma warning disable CS8604 // Possible null reference argument.
-            var outputPath = Path.Combine(Path.GetDirectoryName(captionFile), $"{Path.GetFileNameWithoutExtension(captionFile)}_new{Path.GetExtension(captionFile)}");
-#pragma warning restore CS8604 // Possible null reference argument.
-
-            WriteCaptionFile(captionCompiler, outputPath);
-        }
-
-        public static void AddTestToAll(string captionFile)
-        {
-            Console.WriteLine("Adding \" TEST\" to all");
-            var compiledCaptions = new ValveResourceFormat.ClosedCaptions.ClosedCaptions();
-            compiledCaptions.Read(captionFile);
-
-            var captionCompiler = new ClosedCaptions();
-            foreach (var caption in compiledCaptions)
-            {
-                captionCompiler.Add(caption.Hash, caption.Text + " TEST");
-            }
-
-#pragma warning disable CS8604 // Possible null reference argument.
-            var outputPath = Path.Combine(Path.GetDirectoryName(captionFile), $"{Path.GetFileNameWithoutExtension(captionFile)}_new{Path.GetExtension(captionFile)}");
-#pragma warning restore CS8604 // Possible null reference argument.
-
-            WriteCaptionFile(captionCompiler, outputPath);
-        }
-
-        public static void PrintClosedCaptionData(ValveResourceFormat.ClosedCaptions.ClosedCaptions captions)
-        {
-            Console.WriteLine("Closed Caption Data:");
-            Console.WriteLine($"\tVersion:\t{captions.Version}");
-            Console.WriteLine($"\tNumBlocks:\t{captions.NumBlocks}");
-            Console.WriteLine($"\tBlockSize:\t{captions.BlockSize}");
-            Console.WriteLine($"\tDirectorySize:\t{captions.DirectorySize}");
-            Console.WriteLine($"\tDataOffset:\t{captions.DataOffset}");
-            Console.WriteLine($"\tTotal num captions:\t{captions.Captions.Count}");
         }
 
         public static void PrintHelp()

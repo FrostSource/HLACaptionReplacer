@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using HLACaptionReplacer;
 
 // DEPRECATED, DO NOT USED
 
-namespace HLACaptionReplacer
+namespace HLACaptionCompiler
 {
     public enum ModificationType
     {

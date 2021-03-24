@@ -29,4 +29,8 @@
     <Folder Include="Resources\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\HLACaptionReplacerLibrary\HLACaptionReplacerLibrary.csproj" />
+  </ItemGroup>
+
 </Project>
