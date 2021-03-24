@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AAT;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -54,6 +55,31 @@ namespace HLACaptionReplacer
             }
         }
 
+
+        public static readonly DependencyProperty SoundEventProperty =
+           DependencyProperty.Register(nameof(SoundEvent), typeof(Soundevent),
+           typeof(ClosedCaptionDependencyObject), new PropertyMetadata(OnSoundEventChanged));
+
+        private static void OnSoundEventChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            ClosedCaptionDependencyObject me = d as ClosedCaptionDependencyObject;
+            if (me != null)
+            {
+                me.Name = me.SoundEvent.EventName;
+            }
+        }
+
+        public Soundevent SoundEvent
+        {
+            get
+            {
+                return (Soundevent)GetValue(SoundEventProperty);
+            }
+            set
+            {
+                this.SetValue(SoundEventProperty, value);
+            }
+        }
 
 
 

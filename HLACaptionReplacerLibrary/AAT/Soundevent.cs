@@ -46,6 +46,19 @@ namespace AAT
             }
             return null;
         }
+        public SoundeventProperty GetProperty(string propertyName)
+        {
+            SoundeventProperty retVal = null;
+            foreach (var item in properties)
+            {
+                if (item.TypeName == propertyName)
+                {
+                    retVal = item;
+                    break;
+                }
+            }
+            return retVal;
+        }
 
         public ErrorCodes AddProperty(SoundeventProperty property)
         {

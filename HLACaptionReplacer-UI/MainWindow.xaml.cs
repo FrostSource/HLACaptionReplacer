@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AAT;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -14,6 +15,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+
 
 namespace HLACaptionReplacer
 {
@@ -31,7 +33,7 @@ namespace HLACaptionReplacer
             Captions = new ObservableCollection<ClosedCaptionDependencyObject>();
             InitializeComponent();
         }
-        Dictionary<uint, string> hashToName = new Dictionary<uint, string>();
+        Dictionary<uint, Soundevent> hashToName = new Dictionary<uint, Soundevent>();
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             AddOn = AddOnSelector.GetAddOn();
@@ -91,18 +93,18 @@ namespace HLACaptionReplacer
             }
         }
 
-        public static readonly DependencyProperty SoundNamesProperty =
-            DependencyProperty.Register(nameof(SoundNames), typeof(ObservableCollection<string>),
+        public static readonly DependencyProperty SoundEventsProperty =
+            DependencyProperty.Register(nameof(SoundEvents), typeof(ObservableCollection<Soundevent>),
             typeof(MainWindow));
-              public ObservableCollection<string> SoundNames
+              public ObservableCollection<Soundevent> SoundEvents
         {
             get
             {
-                return (ObservableCollection<string>)GetValue(SoundNamesProperty);
+                return (ObservableCollection<Soundevent>)GetValue(SoundEventsProperty);
             }
             set
             {
-                this.SetValue(SoundNamesProperty, value);
+                this.SetValue(SoundEventsProperty, value);
             }
         }
 
@@ -124,14 +126,14 @@ namespace HLACaptionReplacer
         {
             string addonFolder = Steam.SteamData.GetHLAAddOnFolder(AddOn);
             Captions = new ObservableCollection<ClosedCaptionDependencyObject>();
-            SoundNames = new ObservableCollection<string>();
-            hashToName = new Dictionary<uint, string>();
+            SoundEvents = new ObservableCollection<Soundevent>();
+            hashToName = new Dictionary<uint, Soundevent>();
             foreach (var eventFiles in new DirectoryInfo(addonFolder).GetFiles("*." + Steam.SteamData.SoundEventsExtension, SearchOption.AllDirectories))
             {
                 foreach (var soundName in AAT.AddonHelper.DeserializeFile(eventFiles.FullName))
                 {
-                    SoundNames.Add(soundName.EventName);
-                    hashToName.Add(ValveResourceFormat.Crc32.Compute(Encoding.UTF8.GetBytes(soundName.EventName)), soundName.EventName);
+                    SoundEvents.Add(soundName);
+                    hashToName.Add(ValveResourceFormat.Crc32.Compute(Encoding.UTF8.GetBytes(soundName.EventName)), soundName);
                 }
             }
 
@@ -151,7 +153,7 @@ namespace HLACaptionReplacer
                         var cap = new ClosedCaptionDependencyObject(caption);
                         if (hashToName.ContainsKey(caption.SoundEventHash))
                         {
-                            cap.Name = hashToName[caption.SoundEventHash];
+                            cap.SoundEvent = hashToName[caption.SoundEventHash];
                         }
                         Captions.Add(cap);
                     }
@@ -256,5 +258,32 @@ namespace HLACaptionReplacer
         {
             Captions.Add(new ClosedCaptionDependencyObject());
         }
+       //void Recognize()
+       // {
+       //     Vosk.Vosk.SetLogLevel(0);
+
+       //     Model model = new Model("vosk-model-small-en-us-0.15");
+       //     SpkModel spkModel = new SpkModel("model-spk");
+       //     VoskRecognizer rec = new VoskRecognizer(model, spkModel, 16000.0f);
+
+       //     using (Stream source = File.OpenRead("test.wav"))
+       //     {
+       //         byte[] buffer = new byte[4096];
+       //         int bytesRead;
+       //         while ((bytesRead = source.Read(buffer, 0, buffer.Length)) > 0)
+       //         {
+       //             if (rec.AcceptWaveform(buffer, bytesRead))
+       //             {
+       //                 Console.WriteLine(rec.Result());
+       //             }
+       //             else
+       //             {
+       //                 Console.WriteLine(rec.PartialResult());
+       //             }
+       //         }
+       //     }
+       //     Console.WriteLine(rec.FinalResult());
+       // }
+      
     }
 }
