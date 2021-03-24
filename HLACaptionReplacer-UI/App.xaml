@@ -1,7 +1,7 @@
-﻿<Application x:Class="HLACaptionReplacer.App"
+﻿<Application x:Class="HLACaptionCompiler.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:HLACaptionReplacer" DispatcherUnhandledException="OnCrash"
+             xmlns:local="clr-namespace:HLACaptionCompiler" DispatcherUnhandledException="OnCrash"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
          

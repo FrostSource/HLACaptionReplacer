@@ -7,7 +7,7 @@ using ValveResourceFormat;
 
 #nullable enable
 
-namespace HLACaptionReplacer
+namespace HLACaptionCompiler
 {
     public class ClosedCaptions : IEnumerable<ClosedCaption>
     {

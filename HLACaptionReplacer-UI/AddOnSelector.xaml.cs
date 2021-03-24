@@ -1,4 +1,4 @@
-﻿using HLACaptionReplacer.Steam;
+﻿using HLACaptionCompiler.Steam;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -14,7 +14,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-namespace HLACaptionReplacer
+namespace HLACaptionCompiler
 {
     /// <summary>
     /// Interaction logic for AddOnSelector.xaml

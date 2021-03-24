@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HLACaptionReplacer.Steam
+namespace HLACaptionCompiler.Steam
 {
     public class SteamInfo
     {
