@@ -31,7 +31,14 @@ namespace HLACaptionReplacer
             ClosedCaptionDependencyObject me = d as ClosedCaptionDependencyObject;
             if (me != null)
             {
-                me.Caption.SoundEvent = me.Name;
+                if (!string.IsNullOrEmpty(me.Name))
+                {
+                    me.Caption.SoundEvent = me.Name;
+                }
+                else
+                {
+
+                }
             }
         }
 

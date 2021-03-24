@@ -123,6 +123,7 @@ namespace HLACaptionReplacer
         void LoadCaptionData()
         {
             string addonFolder = Steam.SteamData.GetHLAAddOnFolder(AddOn);
+            Captions = new ObservableCollection<ClosedCaptionDependencyObject>();
             SoundNames = new ObservableCollection<string>();
             hashToName = new Dictionary<uint, string>();
             foreach (var eventFiles in new DirectoryInfo(addonFolder).GetFiles("*." + Steam.SteamData.SoundEventsExtension, SearchOption.AllDirectories))
