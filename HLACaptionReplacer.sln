@@ -10,7 +10,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests", "Tests\Tests.csproj
 		{57C281D1-AE57-4532-AAC4-972B12D994F2} = {57C281D1-AE57-4532-AAC4-972B12D994F2}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HLACaptionReplacerLibrary", "HLACaptionReplacerLibrary\HLACaptionReplacerLibrary.csproj", "{F6ED7823-E328-44D0-AA63-D60EF04EDB83}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HLACaptionCompilerLibrary", "HLACaptionReplacerLibrary\HLACaptionCompilerLibrary.csproj", "{F6ED7823-E328-44D0-AA63-D60EF04EDB83}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HLACaptionCompiler-UI", "HLACaptionReplacer-UI\HLACaptionCompiler-UI.csproj", "{59458704-0E23-4FBD-A699-25FE1DAFB60C}"
 EndProject

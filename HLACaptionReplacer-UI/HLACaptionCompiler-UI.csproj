@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\HLACaptionReplacerLibrary\HLACaptionReplacerLibrary.csproj" />
+    <ProjectReference Include="..\HLACaptionReplacerLibrary\HLACaptionCompilerLibrary.csproj" />
   </ItemGroup>
 
 </Project>
