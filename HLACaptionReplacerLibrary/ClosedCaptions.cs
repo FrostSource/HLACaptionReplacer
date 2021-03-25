@@ -13,7 +13,9 @@ namespace HLACaptionCompiler
     {
         private const uint MAGIC = 0x44434356; // "VCCD"
         private const uint Version = 2;
-
+        /// <summary>
+        /// Gets or sets the the amount of bytes allowed per block.
+        /// </summary>
         public uint BlockSize { get; set; } = 8192;  //TODO: BlockSize currently temporarily settable to test different values.  Will be made const once confident of standard size of 8192.
 
         //TODO: Should this property be private and force to use as enumerator?
@@ -90,13 +92,13 @@ namespace HLACaptionCompiler
         /// <param name="bytes"></param>
         public void Read(byte[] bytes)
         {
-            
-            using (var ms = new MemoryStream(bytes))
-            {
-                Read(ms);
-               
-            }
+            using var ms = new MemoryStream(bytes);
+            Read(ms);
         }
+        /// <summary>
+        /// Reads a compiled caption file's data into this object.
+        /// </summary>
+        /// <param name="stream"></param>
         public void Read(Stream stream)
         {
             using (var binReader = new BinaryReader(stream))
@@ -154,6 +156,7 @@ namespace HLACaptionCompiler
                 }
             }
         }
+        // GetBytes writes a file before returning number of bytes? Not clear naming?
         public byte[] GetBytes()
         {
             byte[] retVal;
@@ -167,7 +170,11 @@ namespace HLACaptionCompiler
         //Naming convention: closecaption_*.dat
         // store location: /game/hlvr_addons/<addon>/resource/subtitles
         //Original Write left for now.
-
+        
+        /// <summary>
+        /// Writes this object's captions to a stream in compiled format.
+        /// </summary>
+        /// <param name="stream">The <see cref="Stream"/> to write to.</param>
         public void Write(Stream stream)
         {
             using (var writer = new BinaryWriter(stream))
@@ -238,6 +245,10 @@ namespace HLACaptionCompiler
                 writer.Write(numBlocks);
             }
         }
+        /// <summary>
+        /// Writes this object's captions to a file on disk.
+        /// </summary>
+        /// <param name="filename">The filename path.</param>
         public void Write(string filename)
         {
             using (var fs = new FileStream(filename, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite))
