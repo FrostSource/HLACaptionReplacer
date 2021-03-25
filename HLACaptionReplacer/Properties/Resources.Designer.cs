@@ -59,14 +59,5 @@ namespace HLACaptionCompiler.Properties {
                 resourceCulture = value;
             }
         }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to .
-        /// </summary>
-        internal static string inputHelp {
-            get {
-                return ResourceManager.GetString("inputHelp", resourceCulture);
-            }
-        }
     }
 }
