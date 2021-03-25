@@ -5,8 +5,8 @@ using System.Text.RegularExpressions;
 
 #nullable enable
 
-//TODO: Proper exceptions.
-//TODO: Method summaries/documentation.
+// Caption modifier file is being replaced with a parser to read standard caption source files.
+// i.e. Don't use this class or its brother.
 
 namespace HLACaptionCompiler
 {
@@ -142,7 +142,7 @@ namespace HLACaptionCompiler
             // Add the additions after the loops have ended
             foreach (var addition in additions)
             {
-                captions.Insert(0, addition.Caption);
+                captions.Add(addition.Caption);
             }
 
             return (replaceCount, deleteCount, additionCount);
