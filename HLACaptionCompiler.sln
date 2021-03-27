@@ -3,16 +3,16 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30517.126
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HLACaptionCompiler", "HLACaptionReplacer\HLACaptionCompiler.csproj", "{57C281D1-AE57-4532-AAC4-972B12D994F2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HLACaptionCompiler", "HLACaptionCompiler\HLACaptionCompiler.csproj", "{57C281D1-AE57-4532-AAC4-972B12D994F2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests", "Tests\Tests.csproj", "{519B48F0-CB17-4097-9519-617FD2D59943}"
 	ProjectSection(ProjectDependencies) = postProject
 		{57C281D1-AE57-4532-AAC4-972B12D994F2} = {57C281D1-AE57-4532-AAC4-972B12D994F2}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HLACaptionCompilerLibrary", "HLACaptionReplacerLibrary\HLACaptionCompilerLibrary.csproj", "{F6ED7823-E328-44D0-AA63-D60EF04EDB83}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HLACaptionCompilerLibrary", "HLACaptionCompilerLibrary\HLACaptionCompilerLibrary.csproj", "{F6ED7823-E328-44D0-AA63-D60EF04EDB83}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HLACaptionCompiler-UI", "HLACaptionReplacer-UI\HLACaptionCompiler-UI.csproj", "{59458704-0E23-4FBD-A699-25FE1DAFB60C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HLACaptionCompiler-UI", "HLACaptionCompiler-UI\HLACaptionCompiler-UI.csproj", "{59458704-0E23-4FBD-A699-25FE1DAFB60C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{35DF898C-C97F-4FD7-AE8E-DA2D14B1F4F3}"
 	ProjectSection(SolutionItems) = preProject
