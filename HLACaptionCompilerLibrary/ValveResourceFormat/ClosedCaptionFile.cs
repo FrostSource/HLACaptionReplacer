@@ -1,12 +1,11 @@
-﻿using HLACaptionReplacer.Parser;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HLACaptionReplacer.ValveResourceFormat
+namespace ValveResourceFormat
 {
     public enum ClosedCaptionLanguage
     {
@@ -69,11 +68,11 @@ namespace HLACaptionReplacer.ValveResourceFormat
 
         public void Read(string filename)
         {
-            var parser = new ClosedCaptionFileParser("");
-            var result = parser.Parse();
+            //var parser = new ClosedCaptionFileParser("");
+            //var result = parser.Parse();
 
-            Language = result["Language"];
-            Tokens = result["Tokens"];
+            //Language = result["Language"];
+            //Tokens = result["Tokens"];
         }
 
         

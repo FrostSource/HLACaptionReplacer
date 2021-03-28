@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HLACaptionReplacer.Parser
+namespace HLACaptionCompiler.Parser
 {
-    class ClosedCaptionFileParser : AbstractParser
+    public class ClosedCaptionFileParser : GenericParser
     {
 
         public ClosedCaptionFileParser(string source):base(source)
@@ -14,7 +14,7 @@ namespace HLACaptionReplacer.Parser
 
         }
 
-        public override IDictionary<string, dynamic> Parse()
+        public IDictionary<string, dynamic> Parse()
         {
             throw new NotImplementedException();
             //var parsed = new Dictionary<string, dynamic>();

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HLACaptionReplacer.Parser
+namespace HLACaptionCompiler.Parser
 {
     class ParserSyntaxException : ParserException
     {
