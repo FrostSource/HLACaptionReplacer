@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,6 +14,9 @@ namespace HLACaptionCompiler.Parser
         public override string CommentBlockEnd { get; set; } = "";
 
         public ClosedCaptionFileParser(string source):base(source)
+        {
+        }
+        public ClosedCaptionFileParser(FileInfo file) : this(File.ReadAllText(file.FullName))
         {
         }
 
@@ -32,9 +36,7 @@ namespace HLACaptionCompiler.Parser
 
         public IDictionary<string, dynamic> Parse()
         {
-            //throw new NotImplementedException();
-            //var parsed = new Dictionary<string, dynamic>();
-            var result = new Dictionary<string, dynamic>();
+            var parsed = new Dictionary<string, dynamic>();
             var tokens = new Dictionary<string, string>();
 
             string word;
@@ -51,7 +53,7 @@ namespace HLACaptionCompiler.Parser
 
             //TODO: Throw error if non-allowed language?
             var language = NextWordOrString();
-            result.Add("Language", language);
+            parsed.Add("Language", language);
 
             word = NextWordOrString();
             if (word != "Tokens")
@@ -66,14 +68,29 @@ namespace HLACaptionCompiler.Parser
                 var value = NextWordOrString();
                 tokens.Add(key, value);
             }
-            result.Add("Tokens", tokens);
+            parsed.Add("Tokens", tokens);
 
             Advance();
 
             if (Next() != '}')
                 SyntaxError($"Expecting closing brace '}}' but found '{Previous()}'");
 
-            return result;
+            return parsed;
+        }
+
+        public bool TryParse(out IDictionary<string, dynamic> parsed)
+        {
+            parsed = null;
+            try
+            {
+                parsed = Parse();
+            }
+            catch (ParserException e)
+            {
+                Console.WriteLine(e);
+                return false;
+            }
+            return true;
         }
     }
 }

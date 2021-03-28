@@ -37,6 +37,9 @@ namespace HLACaptionCompiler.Parser
         public const string Letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
         public const string Digits = "1234567890";
 
+        public GenericParser()
+        {
+        }
         public GenericParser(string source)
         {
             Source = source;

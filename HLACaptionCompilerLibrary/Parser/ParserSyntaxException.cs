@@ -24,7 +24,7 @@ namespace HLACaptionCompiler.Parser
 
         private static string SyntaxErrorMessage(string message, int line, int position)
         {
-            return $"{message} at line {line}, pos {position}.";
+            return $"Syntax Error: {message} at line {line}, pos {position}.";
         }
     }
 }
