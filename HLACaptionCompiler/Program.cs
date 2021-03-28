@@ -27,9 +27,7 @@ namespace HLACaptionCompiler
             //Console.WriteLine($"Num args: {args.Length}");
 
             // Needs a proper parsing library if released
-            //ParseArgs(args);
-
-            Console.WriteLine(Char.IsWhiteSpace('\0'));
+            ParseArgs(args);
 
 
             if (PauseOnCompletion)
