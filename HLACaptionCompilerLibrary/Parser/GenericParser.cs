@@ -6,30 +6,50 @@ using System.Threading.Tasks;
 
 namespace HLACaptionCompiler.Parser
 {
+    //TODO: Should extract relevant members into separate GenericLanguageParser class?
     public class GenericParser
     {
         /// <summary>
         /// Gets or sets if white space should be skipped by the parser when finding elements such as numbers or words.
         /// </summary>
-        public bool AutoSkipWhiteSpace { get; set; } = true;
+        public bool AutoSkipGarbage { get; set; } = true;
+        /// <summary>
+        /// Gets or sets the chars that define the default boundary between sequences such as words and numbers.
+        /// A sequence will stop when it encounters one of the following: White space, boundary char, EOF.
+        /// </summary>
+        public virtual string BoundaryChars { get; set; } = ",.{}[]/-=+()!'\"";
+        /// <summary>
+        /// Gets or sets the string that indicates the start of a line comment.
+        /// </summary>
+        public virtual string CommentLineStart { get; set; } = "//";
+        public virtual string CommentBlockStart { get; set; } = "/*";
+        public virtual string CommentBlockEnd { get; set; } = "*/";
 
         public string Source { get; private set; }
         public char CurrentChar { get => Source[Index]; }
         public int Index { get; private set; } = 0;
         public int LineNumber { get; private set; } = 1;
         public int LinePosition { get; private set; } = 1;
+        public int PreviousLineNumber { get; private set; } = 1;
+        public int PreviousLinePosition { get; private set; } = 1;
         public bool EOF { get => Index >= Source.Length; }
+
         public const string Letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
         public const string Digits = "1234567890";
-        /// <summary>
-        /// Gets or sets the chars that define the default boundary between sequences such as words and numbers.
-        /// A sequence will stop when it encounters one of the following: White space, boundary char, EOF.
-        /// </summary>
-        public string BoundaryChars { get; set; } = ",.{}[]/-=+()!'\"";
 
         public GenericParser(string source)
         {
             Source = source;
+        }
+
+        /// <summary>
+        /// Saves the current line number and position for later retrieval.
+        /// Usually for more accurate syntax error messages.
+        /// </summary>
+        public void SavePosition()
+        {
+            PreviousLineNumber = LineNumber;
+            PreviousLinePosition = LinePosition;
         }
         /// <summary>
         /// Advances the next character in the source text.
@@ -62,17 +82,29 @@ namespace HLACaptionCompiler.Parser
             }
         }
         /// <summary>
-        /// Get the next <see cref="char"/> in the source text and advances, skipping any white space at the beginning.
+        /// Gets the next <see cref="char"/> in the source text and advances, skipping any white space at the beginning.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>
+        /// The next <see cref="char"/> or \0 if at the end.
+        /// </returns>
         /// <exception cref="ParserEOFException">Thrown when the end of the source is found instead of a character.</exception>
         public char Next()
         {
-            if (AutoSkipWhiteSpace) SkipWhiteSpace();
+            if (AutoSkipGarbage) SkipGarbage();
             if (EOF) return '\0';
             char ch = CurrentChar;
             Advance();
             return ch;
+        }
+        /// <summary>
+        /// Gets the previous <see cref="char"/> in the source text.
+        /// </summary>
+        /// <returns>The previous <see cref="char"/> or \0 if at the beginning.</returns>
+        public char Previous()
+        {
+            if (Index < 0)
+                return '\0';
+            return Source[Index - 1];
         }
         /// <summary>
         /// Returns the next <see cref="char"/> in the source text without advancing.
@@ -80,10 +112,20 @@ namespace HLACaptionCompiler.Parser
         /// <returns></returns>
         public char Peek()
         {
-            var index = Index;
-            if (AutoSkipWhiteSpace) index = NextIndexAfterWhiteSpace();
-            if (index >= Source.Length) return '\0';
-            return Source[index];
+            //var index = Index;
+            //TODO: This needs to implement a versin of SkipGarbage without consuming!
+            //if (AutoSkipGarbage) index = NextIndexAfterWhiteSpace();
+            //if (index >= Source.Length) return '\0';
+            //return Source[index];
+            var prevLineNumber = LineNumber;
+            var prevLinePosition = LinePosition;
+            var prevIndex = Index;
+            if (AutoSkipGarbage) SkipGarbage();
+            char ch = Next();
+            LineNumber = prevLineNumber;
+            LinePosition = prevLinePosition;
+            Index = prevIndex;
+            return ch;
         }
         /// <summary>
         /// Checks if <paramref name="str"/> is next in the current position of the source text.
@@ -93,14 +135,21 @@ namespace HLACaptionCompiler.Parser
         public bool IsNext(string str)
         {
             if (str.Length > Source.Length - Index) return false;
-            
-            var index = Index;
-            if (AutoSkipWhiteSpace) index = NextIndexAfterWhiteSpace();
-            if (Source.Substring(index, str.Length) == str)
-            {
-                return true;
-            }
-            return false;
+
+            var prevLineNumber = LineNumber;
+            var prevLinePosition = LinePosition;
+            var prevIndex = Index;
+            if (AutoSkipGarbage) SkipGarbage();
+            var ret = IsNextNoSkip(str);
+            LineNumber = prevLineNumber;
+            LinePosition = prevLinePosition;
+            Index = prevIndex;
+            return ret;
+        }
+        public bool IsNextNoSkip(string str)
+        {
+            if (str == "") return false;
+            return (Source.Substring(Index, str.Length) == str);
         }
         /// <summary>
         /// Eats the given <see cref="string"/> at the front of the source text.
@@ -118,7 +167,7 @@ namespace HLACaptionCompiler.Parser
             {
                 SyntaxError($"Expected '{str}'");
             }
-            if (AutoSkipWhiteSpace) SkipWhiteSpace();
+            if (AutoSkipGarbage) SkipGarbage();
             Advance(str.Length);
         }
         /// <summary>
@@ -131,7 +180,7 @@ namespace HLACaptionCompiler.Parser
         /// <exception cref="ParserSyntaxException">Thrown when <paramref name="boundaryChar"/> is not at the beginning or end.</exception>
         public virtual string NextEnclosed(char boundaryChar = '"')
         {
-            if (AutoSkipWhiteSpace) SkipWhiteSpace();
+            if (AutoSkipGarbage) SkipGarbage();
             if (Next() != boundaryChar)
             {
                 SyntaxError($"Expected '{boundaryChar}'");
@@ -157,7 +206,7 @@ namespace HLACaptionCompiler.Parser
         /// <returns></returns>
         public virtual string NextWord()
         {
-            if (AutoSkipWhiteSpace) SkipWhiteSpace();
+            if (AutoSkipGarbage) SkipGarbage();
             var str = new StringBuilder();
             while (!EOF && !BoundaryChars.Contains(CurrentChar) && !IsWhiteSpace(CurrentChar))
             {
@@ -176,7 +225,7 @@ namespace HLACaptionCompiler.Parser
         /// <returns></returns>
         public virtual string NextInteger()
         {
-            if (AutoSkipWhiteSpace) SkipWhiteSpace();
+            if (AutoSkipGarbage) SkipGarbage();
             var str = new StringBuilder();
             while (!EOF && !BoundaryChars.Contains(CurrentChar) && !IsWhiteSpace(CurrentChar))
             {
@@ -197,7 +246,7 @@ namespace HLACaptionCompiler.Parser
         /// <returns></returns>
         public virtual string NextDecimal(char decimalChar = '.')
         {
-            if (AutoSkipWhiteSpace) SkipWhiteSpace();
+            if (AutoSkipGarbage) SkipGarbage();
             var boundaryChars = BoundaryChars;
             int pos;
             if ((pos = BoundaryChars.IndexOf(decimalChar)) != -1)
@@ -235,7 +284,7 @@ namespace HLACaptionCompiler.Parser
         /// </example>
         public virtual string NextSequence(string validStartChars, string validChars)
         {
-            if (AutoSkipWhiteSpace) SkipWhiteSpace();
+            if (AutoSkipGarbage) SkipWhiteSpace();
             if (!validStartChars.Contains(CurrentChar)) SyntaxError($"Expecting one of '{validStartChars}', found '{CurrentChar}'");
             Advance();
 
@@ -252,6 +301,28 @@ namespace HLACaptionCompiler.Parser
             }
             return str.ToString();
         }
+        public void SkipGarbage()
+        {
+            while (IsWhiteSpace(CurrentChar) || IsNextNoSkip(CommentLineStart) || IsNextNoSkip(CommentBlockStart))
+            {
+                SkipWhiteSpace();
+                SkipCommentLine();
+                SkipCommentBlock();
+            }
+        }
+        public void SkipCommentLine()
+        {
+            if (IsNextNoSkip(CommentLineStart)) SkipLine();
+        }
+        public void SkipCommentBlock()
+        {
+            if (IsNextNoSkip(CommentBlockStart))
+            {
+                Advance(CommentBlockStart.Length);
+                while (!IsNext(CommentBlockEnd)) Advance();
+                Advance(CommentBlockEnd.Length);
+            }
+        }
         /// <summary>
         /// Advances the source string to the first non-whitespace character.
         /// </summary>
@@ -262,6 +333,10 @@ namespace HLACaptionCompiler.Parser
                 Advance();
             }
         }
+        /// <summary>
+        /// Gets the index at the end of any current whitespace. That is, the first index with a non-whitespace character.
+        /// </summary>
+        /// <returns></returns>
         public int NextIndexAfterWhiteSpace()
         {
             var index = Index;
@@ -270,6 +345,17 @@ namespace HLACaptionCompiler.Parser
                 index++;
             }
             return index;
+        }
+        /// <summary>
+        /// Moves to the next line in the source if one exists.
+        /// </summary>
+        public void SkipLine()
+        {
+            while (!EOF && CurrentChar != '\n')
+            {
+                Advance();
+            }
+            if (CurrentChar == '\n') Advance();
         }
 
         public static bool IsWhiteSpace(char ch)

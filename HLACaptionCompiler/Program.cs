@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -27,17 +28,7 @@ namespace HLACaptionCompiler
             //Console.WriteLine($"Num args: {args.Length}");
 
             // Needs a proper parsing library if released
-            //ParseArgs(args);
-
-            var str = "basic.tag \"enclosed string with, whspace.  \" 1005 5.6";
-            var parser = new Parser.GenericParser(str);
-            parser.BoundaryChars = "{}";
-
-            Console.WriteLine("Word: " + parser.NextWord());
-            Console.WriteLine($"Enclosed: \"{parser.NextEnclosed()}\"");
-            Console.WriteLine("Integer: "+ parser.NextInteger());
-            Console.WriteLine("Decimal: "+ parser.NextDecimal());
-
+            ParseArgs(args);
 
             if (PauseOnCompletion)
             {
