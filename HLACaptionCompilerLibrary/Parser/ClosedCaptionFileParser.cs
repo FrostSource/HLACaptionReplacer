@@ -20,7 +20,7 @@ namespace HLACaptionCompiler.Parser
         {
         }
 
-        private string NextWordOrString()
+        private string NextWordOrString(string expecting = "")
         {
             SkipWhiteSpace();
             SavePosition();
@@ -30,52 +30,59 @@ namespace HLACaptionCompiler.Parser
             }
             else
             {
-                return NextWord();
+                return NextWord(expecting);
             }
         }
 
         public IDictionary<string, dynamic> Parse()
         {
-            var parsed = new Dictionary<string, dynamic>();
-            var tokens = new Dictionary<string, string>();
+            //try
+            //{
+                var parsed = new Dictionary<string, dynamic>();
+                var tokens = new Dictionary<string, string>();
 
-            string word;
-            word = NextWordOrString();
-            if (word != "lang")
-                SyntaxError($"Expecting 'lang' but found {word}", PreviousLineNumber, PreviousLinePosition);
+                string word;
+                word = NextWordOrString("lang");
+                if (word != "lang")
+                    SyntaxError($"Expecting 'lang' but found {word}", SavedLineNumber, SavedLinePosition);
 
-            if (Next() != '{')
-                SyntaxError($"Expecting opening brace '{{' but found '{Previous()}'");
+                if (Next() != '{')
+                    SyntaxError($"Expecting opening brace '{{' but found '{CharToString(Previous())}'");
 
-            word = NextWordOrString();
-            if (word != "Language")
-                SyntaxError($"Expecting 'Language' but found {word}", PreviousLineNumber, PreviousLinePosition);
+                word = NextWordOrString("Language");
+                if (word != "Language")
+                    SyntaxError($"Expecting 'Language' but found {word}", SavedLineNumber, SavedLinePosition);
 
-            //TODO: Throw error if non-allowed language?
-            var language = NextWordOrString();
-            parsed.Add("Language", language);
+                //TODO: Throw error if non-allowed language?
+                var language = NextWordOrString();
+                parsed.Add("Language", language);
 
-            word = NextWordOrString();
-            if (word != "Tokens")
-                SyntaxError($"Expecting 'Tokens' but found {word}", PreviousLineNumber, PreviousLinePosition);
+                word = NextWordOrString("Tokens");
+                if (word != "Tokens")
+                    SyntaxError($"Expecting 'Tokens' but found {word}", SavedLineNumber, SavedLinePosition);
 
-            if (Next() != '{')
-                SyntaxError($"Expecting opening brace '{{' but found '{Previous()}'");
+                if (Next() != '{')
+                    SyntaxError($"Expecting opening brace '{{' but found '{CharToString(Previous())}'");
 
-            while (Peek() != '}')
-            {
-                var key = NextWordOrString();
-                var value = NextWordOrString();
-                tokens.Add(key, value);
-            }
-            parsed.Add("Tokens", tokens);
+                while (Peek() != '}')
+                {
+                    var key = NextWordOrString();
+                    var value = NextWordOrString();
+                    tokens.Add(key, value);
+                }
+                parsed.Add("Tokens", tokens);
 
-            Advance();
+                Advance();
 
-            if (Next() != '}')
-                SyntaxError($"Expecting closing brace '}}' but found '{Previous()}'");
+                if (Next() != '}')
+                    SyntaxError($"Expecting closing brace '}}' but found '{Previous()}'");
 
-            return parsed;
+                return parsed;
+            //}
+            //catch (ParserSyntaxException e)
+            //{
+            //    Console.WriteLine(e);
+            //}
         }
 
         public bool TryParse(out IDictionary<string, dynamic> parsed)
@@ -87,7 +94,7 @@ namespace HLACaptionCompiler.Parser
             }
             catch (ParserException e)
             {
-                Console.WriteLine(e);
+                Console.WriteLine(e.Message);
                 return false;
             }
             return true;

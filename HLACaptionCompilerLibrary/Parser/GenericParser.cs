@@ -26,12 +26,23 @@ namespace HLACaptionCompiler.Parser
         public virtual string CommentBlockEnd { get; set; } = "*/";
 
         public string Source { get; private set; }
-        public char CurrentChar { get => Source[Index]; }
+        public char CurrentChar
+        {
+            get
+            {
+                if (Index < 0 || Index >= Source.Length)
+                    return '\0';
+                else
+                    return Source[Index];
+            }
+        }
         public int Index { get; private set; } = 0;
         public int LineNumber { get; private set; } = 1;
         public int LinePosition { get; private set; } = 1;
         public int PreviousLineNumber { get; private set; } = 1;
         public int PreviousLinePosition { get; private set; } = 1;
+        public int SavedLineNumber { get; private set; } = 1;
+        public int SavedLinePosition { get; private set; } = 1;
         public bool EOF { get => Index >= Source.Length; }
 
         public const string Letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -42,7 +53,10 @@ namespace HLACaptionCompiler.Parser
         }
         public GenericParser(string source)
         {
-            Source = source;
+            //if (!source.EndsWith('\n'))
+            //    source += '\n';
+
+            Source = source.Trim() + '\n';
         }
 
         /// <summary>
@@ -51,8 +65,8 @@ namespace HLACaptionCompiler.Parser
         /// </summary>
         public void SavePosition()
         {
-            PreviousLineNumber = LineNumber;
-            PreviousLinePosition = LinePosition;
+            SavedLineNumber = LineNumber;
+            SavedLinePosition = LinePosition;
         }
         /// <summary>
         /// Advances the next character in the source text.
@@ -61,6 +75,8 @@ namespace HLACaptionCompiler.Parser
         public void Advance()
         {
             if (EOF) throw new ParserEOFException();
+            PreviousLineNumber = LineNumber;
+            PreviousLinePosition = LinePosition;
             if (Source[Index] == '\n')
             {
                 LineNumber++;
@@ -137,6 +153,7 @@ namespace HLACaptionCompiler.Parser
         /// <returns>True if <paramref name="str"/> is next in the current position of the source text.</returns>
         public bool IsNext(string str)
         {
+            if (str == "") return false;
             if (str.Length > Source.Length - Index) return false;
 
             var prevLineNumber = LineNumber;
@@ -152,6 +169,7 @@ namespace HLACaptionCompiler.Parser
         public bool IsNextNoSkip(string str)
         {
             if (str == "") return false;
+            if (str.Length > Source.Length - Index) return false;
             return (Source.Substring(Index, str.Length) == str);
         }
         /// <summary>
@@ -206,8 +224,9 @@ namespace HLACaptionCompiler.Parser
         /// <summary>
         /// Gets the next non-whitespace string of characters in the source text.
         /// </summary>
+        /// <param name="expecting">Optionally specify the word that is expected to provide better error reporting.</param>
         /// <returns></returns>
-        public virtual string NextWord()
+        public virtual string NextWord(string expecting = "word")
         {
             if (AutoSkipGarbage) SkipGarbage();
             var str = new StringBuilder();
@@ -218,7 +237,7 @@ namespace HLACaptionCompiler.Parser
             }
             if (str.Length == 0)
             {
-                SyntaxError("Expecting word");
+                SyntaxError($"Expecting \"{(expecting == "" ? "word" : expecting)}\"");
             }
             return str.ToString();
         }
@@ -258,7 +277,7 @@ namespace HLACaptionCompiler.Parser
             var str = new StringBuilder();
             while (!EOF && !boundaryChars.Contains(CurrentChar) && !IsWhiteSpace(CurrentChar))
             {
-                if (!IsDigit(CurrentChar) && CurrentChar != decimalChar) SyntaxError($"Unexpected character '{CurrentChar}' in number");
+                if (!IsDigit(CurrentChar) && CurrentChar != decimalChar) SyntaxError($"Unexpected character '{CharToString(CurrentChar)}' in number");
                 if (CurrentChar == decimalChar)
                 {
                     if (foundDecimalChar) SyntaxError($"Encountered more than one '{decimalChar}' in decimal number.");
@@ -288,13 +307,13 @@ namespace HLACaptionCompiler.Parser
         public virtual string NextSequence(string validStartChars, string validChars)
         {
             if (AutoSkipGarbage) SkipWhiteSpace();
-            if (!validStartChars.Contains(CurrentChar)) SyntaxError($"Expecting one of '{validStartChars}', found '{CurrentChar}'");
+            if (!validStartChars.Contains(CurrentChar)) SyntaxError($"Expecting one of '{validStartChars}' but found '{CharToString(CurrentChar)}'");
             Advance();
 
             var str = new StringBuilder();
             while (!EOF && !IsWhiteSpace(CurrentChar))
             {
-                if (!validChars.Contains(CurrentChar)) SyntaxError($"Expecting one of '{validChars}', found '{CurrentChar}'");
+                if (!validChars.Contains(CurrentChar)) SyntaxError($"Expecting one of '{validChars}' but found '{CharToString(CurrentChar)}'");
                 str.Append(CurrentChar);
                 Advance();
             }
@@ -373,9 +392,23 @@ namespace HLACaptionCompiler.Parser
         {
             return $"line {lineNumber}, pos {linePosition}";
         }
+        public static string CharToString(char ch)
+        {
+            return ch switch
+            {
+                '\0' => "nothing",
+                '\r' => "carriage return",
+                '\n' => "new line",
+                '\t' => "tab",
+                '\f' => "form feed",
+                '"' => "double quotation mark",
+                '\'' => "single quotation mark",
+                _ => ch.ToString(),
+            };
+        }
         public void SyntaxError(string message)
         {
-            throw new ParserSyntaxException(message, LineNumber, LinePosition);
+            throw new ParserSyntaxException(message, PreviousLineNumber, PreviousLinePosition);
         }
         public void SyntaxError(string message, int lineNumber, int linePosition)
         {

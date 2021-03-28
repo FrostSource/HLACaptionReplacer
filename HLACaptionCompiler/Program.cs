@@ -9,66 +9,77 @@ using System.Text;
 
 namespace HLACaptionCompiler
 {
-    public enum InputMode
-    {
-        Custom,
-        Replace
-    }
-
     class Program
     {
-        // Currently defaults to true while testing.
-        private static bool PauseOnCompletion { get; set; } = true;
-        private static bool Verbose { get; set; } = false;
-        private static InputMode InputMode { get; set; } = InputMode.Replace;
+        private static CompilerSettings Settings { get; set; } = new CompilerSettings();
+        private static bool WriteSettingsFile { get; set; } = false;
         private static IList<FileInfo> Files { get; set; } = new List<FileInfo>();
         public const string CaptionSourceFilePattern = "closecaption_*.txt";
         public const string CaptionCompiledFilePattern = "closecaption_*.dat";
+        public static DirectoryInfo WorkingDirectory { get; private set; } = new DirectoryInfo(Directory.GetCurrentDirectory());
+        public static string SettingsPath { get; set; } = Path.Combine(WorkingDirectory.FullName, "CompilerSettings.json");
 
         static void Main(string[] args)
         {
-            //Console.WriteLine("Hello Caption Replacers!!");
-
-
-            //Console.WriteLine($"Current dir: {Directory.GetCurrentDirectory()}");
-            //Console.WriteLine($"Num args: {args.Length}");
-
-            // Needs a proper parsing library if released
             ParseArgs(args);
 
+            if (WriteSettingsFile)
+            {
+                WriteSettings();
+            }
+            else if (File.Exists(SettingsPath))
+            {
+                ReadSettings();
+            }
+            
             if (Files.Count == 0)
             {
-                var workingDirectory = Directory.GetCurrentDirectory();
-                var hlaMainAddonFolder = Steam.SteamData.GetHLAMainAddOnFolder();
-                // Not inside an addon
-                if (!hlaMainAddonFolder.Contains(workingDirectory) || hlaMainAddonFolder == workingDirectory)
+                WriteLineVerbose("[Mode] Compiling from current addon folder or chosen addon.");
+                CompileWorkingOrChosenDirectory();
+            }
+            else
+            {
+                WriteLineVerbose("[Mode] Compiling files given to command line.");
+                foreach (var file in Files)
                 {
-                    WriteVerbose("Not inside addon folder. Using list selection.");
-
-                    var addon = GetUserAddonChoice();
-                    if (addon == "") return;
-                    var contentPath = Steam.SteamData.GetHLAAddOnFolder(addon);
-                    var gamePath = Steam.SteamData.GetAddOnGameFolder(addon);
-                    var contentCaptionDirectory = new DirectoryInfo(Path.Combine(contentPath, Steam.SteamData.CaptionFolder));
-                    var gameCaptionDirectory = new DirectoryInfo(Path.Combine(gamePath, Steam.SteamData.CaptionFolder));
-
-                    CompileFolder(contentCaptionDirectory, gameCaptionDirectory);
+                    CompileFile(file, WorkingDirectory);
                 }
-                //var directories = working.Split(Path.DirectorySeparatorChar);
-                //var info = new DirectoryInfo(working);
-                //info.
-                //foreach (var directory in directories)
-                //{
-                //    Console.WriteLine(directory);
-                //}
-
             }
 
-            if (PauseOnCompletion)
+            if (Settings.PauseOnCompletion)
             {
                 Console.WriteLine("\nPress any key to exit the process...");
                 Console.ReadKey();
             }
+        }
+
+        public static void CompileWorkingOrChosenDirectory()
+        {
+            var hlaMainAddonFolder = Steam.SteamData.GetHLAMainAddOnFolder();
+            // Check if inside addon folder
+            string addon = GetParentAddonName(WorkingDirectory.FullName);
+            // Not inside an addon
+            if (addon == "")
+            {
+                WriteLineVerbose("Not inside addon folder. Using list selection.");
+
+                addon = GetUserAddonChoice();
+                if (addon == "") return;
+            }
+            else
+            {
+                WriteLineVerbose($"Compiling captions for addon \"{addon}\".");
+            }
+
+            var contentPath = Steam.SteamData.GetHLAAddOnFolder(addon);
+            var gamePath = Steam.SteamData.GetAddOnGameFolder(addon);
+            var contentCaptionDirectory = new DirectoryInfo(Path.Combine(contentPath, Steam.SteamData.CaptionFolder));
+            var gameCaptionDirectory = new DirectoryInfo(Path.Combine(gamePath, Steam.SteamData.CaptionFolder));
+            var (filesCompiled, filesTotal) = CompileFolder(contentCaptionDirectory, gameCaptionDirectory);
+            if (filesCompiled > 0)
+                Console.WriteLine($"{filesCompiled}/{filesTotal} files compiled to \"{gameCaptionDirectory.FullName}\"");
+            //else
+            //    Console.WriteLine($"Failed to write captions.");
         }
 
         private static void ParseArgs(string[] args)
@@ -126,12 +137,21 @@ namespace HLACaptionCompiler
             {
                 case "pause":
                 case "p":
-                    PauseOnCompletion = true;
+                    Settings.PauseOnCompletion = true;
                     break;
 
                 case "verbose":
                 case "v":
-                    Verbose = true;
+                    Settings.Verbose = true;
+                    break;
+
+                case "settings":
+                case "s":
+                    WriteSettingsFile = true;
+                    break;
+
+                default:
+                    Console.WriteLine($"Unknown option '{option}'");
                     break;
             }
         }
@@ -157,18 +177,19 @@ namespace HLACaptionCompiler
             int selection = 1;
             while (input.Key != ConsoleKey.Enter && !int.TryParse(input.KeyChar.ToString(), out selection) && (selection < 1 || selection > addons.Length))
             {
-                Console.WriteLine($"{input.KeyChar} is not a valid selection.");
+                Console.WriteLine(" is not a valid selection.");
                 Console.Write("> ");
                 input = Console.ReadKey();
             }
+            Console.WriteLine();
 
             if (input.Key == ConsoleKey.Enter) return "";
-
-            return addons[selection];
+            return addons[selection-1];
             
         }
-        public static void CompileFile(FileInfo file, DirectoryInfo dir)
+        public static bool CompileFile(FileInfo file, DirectoryInfo dir)
         {
+            WriteVerbose($"Compiling {file.Name} ... ");
             var parser = new ClosedCaptionFileParser(file);
             if (parser.TryParse(out var parsed))
             {
@@ -177,21 +198,92 @@ namespace HLACaptionCompiler
                 {
                     captions.Add(token.Key, token.Value);
                 }
-                captions.Write(Path.Combine(dir.FullName, file.Name, ".dat"));
+                captions.Write(Path.Combine(dir.FullName, Path.ChangeExtension(file.Name, ".dat")));
+                WriteLineVerbose("DONE.");
+                return true;
             }
+            Console.WriteLine($"{file.Name} failed to compile...");
+            return false;
         }
-        public static void CompileFolder(DirectoryInfo from, DirectoryInfo to)
+        public static (int filesCompiled, int filesTotal) CompileFolder(DirectoryInfo from, DirectoryInfo to)
         {
+            if (!from.Exists)
+            {
+                Console.WriteLine($"\"{Steam.SteamData.CaptionFolder}\" does not not exist in addon \"{GetParentAddonName(from.FullName)}\".");
+                return (0,0);
+            }
+            int successes = 0;
             var files = from.GetFiles(CaptionSourceFilePattern);
+            if (files.Length <= 0)
+            {
+                Console.WriteLine($"No caption content files found in addon \"{GetParentAddonName(from.FullName)}\".");
+            }
             foreach (var file in files)
             {
-                CompileFile(file, to);
+                if (CompileFile(file, to))
+                    successes++;
+            }
+            return (successes,files.Length);
+        }
+        public static void WriteSettings()
+        {
+            try
+            {
+                var options = new System.Text.Json.JsonSerializerOptions()
+                {
+                    WriteIndented = true
+                };
+                var json = System.Text.Json.JsonSerializer.Serialize(Settings, options);
+                File.WriteAllText(SettingsPath, json);
+            }
+            catch (SystemException e)
+            {
+                WriteLineVerbose($"[Error writing settings file: {e}");
             }
         }
+        public static void ReadSettings()
+        {
+            try
+            {
+                var json = File.ReadAllText(SettingsPath);
+                CompilerSettings? settings;
+                if ((settings = System.Text.Json.JsonSerializer.Deserialize<CompilerSettings>(json)) != null)
+                    Settings = settings;
+            }
+            catch (SystemException e)
+            {
+                WriteLineVerbose($"[Error reading settings file: {e}");
+            }
+            catch (System.Text.Json.JsonException e)
+            {
+                WriteLineVerbose($"[Error reading settings file: {e}");
+            }
+        }
+        public static string GetParentAddonName(string folderPath)
+        {
+            var addonFolder = Steam.SteamData.GetHLAMainAddOnFolder();
+            if (!folderPath.Contains(addonFolder) || addonFolder == folderPath)
+                return "";
+            
+            var folders = folderPath.Split(Path.DirectorySeparatorChar);
+            for (int i = folders.Length - 1; i >= 0; i--)
+            {
+                if (folders[i] == "hlvr_addons")
+                {
+                    return folders[i + 1];
+                }
+            }
 
+            return "";
+            
+        }
+        private static void WriteLineVerbose(string message)
+        {
+            if (Settings.Verbose) Console.WriteLine(message);
+        }
         private static void WriteVerbose(string message)
         {
-            if (Verbose) Console.WriteLine(message);
+            if (Settings.Verbose) Console.Write(message);
         }
 
         public static void PrintHelp()
@@ -205,8 +297,13 @@ namespace HLACaptionCompiler
             Console.WriteLine(help);
         }
 
-
+        private class CompilerSettings
+        {
+            public bool PauseOnCompletion { get; set; } = false;
+            public bool Verbose { get; set; } = false;
+        }
     }
+
 
     
 }
