@@ -12,6 +12,8 @@ namespace HLACaptionCompiler.Parser
         public override string BoundaryChars { get; set; } = "{}\"";
         public override string CommentBlockStart { get; set; } = "";
         public override string CommentBlockEnd { get; set; } = "";
+        public override bool AutomaticallyConvertEscapedCharacters { get; set; } = false;
+
 
         public ClosedCaptionFileParser(string source):base(source)
         {
@@ -22,9 +24,10 @@ namespace HLACaptionCompiler.Parser
 
         private string NextWordOrString(string expecting = "")
         {
-            SkipWhiteSpace();
+            //SkipWhiteSpace();
+            SkipGarbage();
             SavePosition();
-            if (CurrentChar == '"')
+            if (Peek() == '"')
             {
                 return NextEnclosed();
             }
@@ -44,14 +47,14 @@ namespace HLACaptionCompiler.Parser
                 string word;
                 word = NextWordOrString("lang");
                 if (word != "lang")
-                    SyntaxError($"Expecting 'lang' but found {word}", SavedLineNumber, SavedLinePosition);
+                    SyntaxErrorSaved($"Expecting 'lang' but found {word}");
 
                 if (Next() != '{')
-                    SyntaxError($"Expecting opening brace '{{' but found '{CharToString(Previous())}'");
+                    SyntaxErrorPrevious($"Expecting opening brace '{{' but found '{CharToString(Previous())}'");
 
                 word = NextWordOrString("Language");
                 if (word != "Language")
-                    SyntaxError($"Expecting 'Language' but found {word}", SavedLineNumber, SavedLinePosition);
+                SyntaxErrorSaved($"Expecting 'Language' but found {word}");
 
                 //TODO: Throw error if non-allowed language?
                 var language = NextWordOrString();
@@ -59,10 +62,10 @@ namespace HLACaptionCompiler.Parser
 
                 word = NextWordOrString("Tokens");
                 if (word != "Tokens")
-                    SyntaxError($"Expecting 'Tokens' but found {word}", SavedLineNumber, SavedLinePosition);
+                SyntaxErrorSaved($"Expecting 'Tokens' but found {word}");
 
                 if (Next() != '{')
-                    SyntaxError($"Expecting opening brace '{{' but found '{CharToString(Previous())}'");
+                    SyntaxErrorPrevious($"Expecting opening brace '{{' but found '{CharToString(Previous())}'");
 
                 while (Peek() != '}')
                 {
@@ -75,7 +78,7 @@ namespace HLACaptionCompiler.Parser
                 Advance();
 
                 if (Next() != '}')
-                    SyntaxError($"Expecting closing brace '}}' but found '{Previous()}'");
+                    SyntaxErrorPrevious($"Expecting closing brace '}}' but found '{Previous()}'");
 
                 return parsed;
             //}

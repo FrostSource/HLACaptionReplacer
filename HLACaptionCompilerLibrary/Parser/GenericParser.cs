@@ -18,12 +18,18 @@ namespace HLACaptionCompiler.Parser
         /// A sequence will stop when it encounters one of the following: White space, boundary char, EOF.
         /// </summary>
         public virtual string BoundaryChars { get; set; } = ",.{}[]/-=+()!'\"";
+        public virtual string WhiteSpaceChars { get; set; } = " \t\r\f\n";
         /// <summary>
         /// Gets or sets the string that indicates the start of a line comment.
         /// </summary>
         public virtual string CommentLineStart { get; set; } = "//";
         public virtual string CommentBlockStart { get; set; } = "/*";
         public virtual string CommentBlockEnd { get; set; } = "*/";
+
+        public virtual bool AllowCharacterEscaping { get; set; } = true;
+        public virtual bool AutomaticallyConvertEscapedCharacters { get; set; } = true;
+        public virtual char EscapeCharacter { get; set; } = '\\';
+        //public virtual string[] EscapableStrings { get; set; } = { "'", "\"", "\\", "n", "r", "t", "b", "f", "v", "0" };
 
         public string Source { get; private set; }
         public char CurrentChar
@@ -36,6 +42,16 @@ namespace HLACaptionCompiler.Parser
                     return Source[Index];
             }
         }
+        public char NextChar
+        {
+            get
+            {
+                if (Index < -1 || Index >= Source.Length - 1)
+                    return '\0';
+                else
+                    return Source[Index + 1];
+            }
+        }
         public int Index { get; private set; } = 0;
         public int LineNumber { get; private set; } = 1;
         public int LinePosition { get; private set; } = 1;
@@ -45,8 +61,9 @@ namespace HLACaptionCompiler.Parser
         public int SavedLinePosition { get; private set; } = 1;
         public bool EOF { get => Index >= Source.Length; }
 
-        public const string Letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        public const string Digits = "1234567890";
+        public const string AlphaChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        public const string DigitChars = "1234567890";
+        public const string HexChars = DigitChars + "abcdefABCDEF";
 
         public GenericParser()
         {
@@ -193,6 +210,7 @@ namespace HLACaptionCompiler.Parser
         }
         /// <summary>
         /// Returns the next <see cref="string"/> enclosed between a given <see cref="char"/>.
+        /// <para>Makes use of <see cref="EscapeCharacter"/> and <see cref="EscapableStrings"/>.</para>
         /// <para>Does not return the matching <paramref name="boundaryChar"/>.</para>
         /// </summary>
         /// <param name="boundaryChar">The <see cref="char"/> that defines the boundary.</param>
@@ -204,19 +222,29 @@ namespace HLACaptionCompiler.Parser
             if (AutoSkipGarbage) SkipGarbage();
             if (Next() != boundaryChar)
             {
-                SyntaxError($"Expected '{boundaryChar}'");
+                SyntaxErrorPrevious($"Expected '{boundaryChar}'");
             }
             // Previous values saved for more accurate error reporting
+            // separately from SavePosition so it doesn't override child classes.
             var linePrev = LineNumber;
             var posPrev = LinePosition;
             var str = new StringBuilder();
             while (CurrentChar != boundaryChar)
             {
-                //if (ch == '\0') SyntaxError($"Missing closing '{boundaryChar}'", linePrev, posPrev);
                 if (EOF) SyntaxError($"Missing closing '{boundaryChar}'", linePrev, posPrev);
-                //TODO: Allow escaped characters? Does Valve allow them? E.g. \<
-                str.Append(CurrentChar);
-                Advance();
+                string escape;
+                if ((escape = NextEscapeSequence()) != "")
+                {
+                    if (AutomaticallyConvertEscapedCharacters)
+                        str.Append(ConvertStringToEscape(escape));
+                    else
+                        str.Append(escape);
+                }
+                else
+                {
+                    str.Append(CurrentChar);
+                    Advance();
+                }
             }
             Advance();
             return str.ToString();
@@ -226,11 +254,12 @@ namespace HLACaptionCompiler.Parser
         /// </summary>
         /// <param name="expecting">Optionally specify the word that is expected to provide better error reporting.</param>
         /// <returns></returns>
-        public virtual string NextWord(string expecting = "word")
+        public virtual string NextWord(string expecting = "word", string boundaryChars = null)
         {
+            boundaryChars ??= BoundaryChars;
             if (AutoSkipGarbage) SkipGarbage();
             var str = new StringBuilder();
-            while (!EOF && !BoundaryChars.Contains(CurrentChar) && !IsWhiteSpace(CurrentChar))
+            while (!EOF && !boundaryChars.Contains(CurrentChar) && !IsWhiteSpace(CurrentChar))
             {
                 str.Append(CurrentChar);
                 Advance();
@@ -323,6 +352,61 @@ namespace HLACaptionCompiler.Parser
             }
             return str.ToString();
         }
+        /// <summary>
+        /// Gets the next escape sequence as a string if an escape character is next.
+        /// </summary>
+        /// <remarks>
+        /// This method does not strip any leading garbage by default.
+        /// </remarks>
+        /// <returns>The next escape sequence with the leading marking character, or blank if not found.</returns>
+        public virtual string NextEscapeSequence()
+        {
+            if (AllowCharacterEscaping && CurrentChar == EscapeCharacter)
+            {
+                if (IsWhiteSpace(NextChar))
+                {
+                    SyntaxError("Expecting escape sequence");
+                }
+                Advance();
+                // Single character escapes
+                switch (CurrentChar)
+                {
+                    case '\'': Advance(); return EscapeCharacter + @"'";
+                    case '"': Advance(); return EscapeCharacter + @"""";
+                    case '\\': Advance(); return EscapeCharacter + @"\";
+                    case '0': Advance(); return EscapeCharacter + @"0";
+                    case 'a': Advance(); return EscapeCharacter + @"a";
+                    case 'b': Advance(); return EscapeCharacter + @"b";
+                    case 'f': Advance(); return EscapeCharacter + @"f";
+                    case 'n': Advance(); return EscapeCharacter + @"n";
+                    case 'r': Advance(); return EscapeCharacter + @"r";
+                    case 't': Advance(); return EscapeCharacter + @"t";
+                    case 'v': Advance(); return EscapeCharacter + @"v";
+                }
+                // More complex escapes
+                var str = new StringBuilder();
+                // Unicode escape sequence for character with hex value xxxx
+                if (CurrentChar == 'u')
+                {
+                    Advance();
+                    for (int i = 0; i < 4; i++)
+                    {
+                        if (!CharIsHexidecimal(CurrentChar))
+                        {
+                            SyntaxErrorPrevious($"Invalid character in Unicode escape {CurrentChar}");
+                        }
+                        str.Append(CurrentChar);
+                        Advance();
+                    }
+                    return $"\\u{str}";
+                }
+                //TODO: \xn[n][n][n] – Unicode escape sequence for character with hex value nnnn (variable length version of \uxxxx)
+                //TODO: \Uxxxxxxxx – Unicode escape sequence for character with hex value xxxxxxxx (for generating surrogates)
+
+                SyntaxError("Unrecognized escape sequence");
+            }
+            return "";
+        }
         public void SkipGarbage()
         {
             while (IsWhiteSpace(CurrentChar) || IsNextNoSkip(CommentLineStart) || IsNextNoSkip(CommentBlockStart))
@@ -332,11 +416,11 @@ namespace HLACaptionCompiler.Parser
                 SkipCommentBlock();
             }
         }
-        public void SkipCommentLine()
+        public virtual void SkipCommentLine()
         {
             if (IsNextNoSkip(CommentLineStart)) SkipLine();
         }
-        public void SkipCommentBlock()
+        public virtual void SkipCommentBlock()
         {
             if (IsNextNoSkip(CommentBlockStart))
             {
@@ -348,7 +432,7 @@ namespace HLACaptionCompiler.Parser
         /// <summary>
         /// Advances the source string to the first non-whitespace character.
         /// </summary>
-        public void SkipWhiteSpace()
+        public virtual void SkipWhiteSpace()
         {
             while (!EOF && IsWhiteSpace(CurrentChar))
             {
@@ -406,13 +490,45 @@ namespace HLACaptionCompiler.Parser
                 _ => ch.ToString(),
             };
         }
-        public void SyntaxError(string message)
+        public static string ConvertStringToEscape(string escapeString)
         {
-            throw new ParserSyntaxException(message, PreviousLineNumber, PreviousLinePosition);
+            var p = System.Text.RegularExpressions.Regex.Unescape(escapeString);
+            return p;
+            /*return escapeString switch
+            {
+                "'" => '\'',
+                "\"" => '\"',
+                "\\" => '\\',
+                "0" => '\0',
+                "a" => '\a',
+                "b" => '\b',
+                "f" => '\f',
+                "n" => '\n',
+                "r" => '\r',
+                "t" => '\t',
+                "v" => '\v',
+                "xFF" => '\xFF'
+            };*/
+        }
+        public static bool CharIsHexidecimal(char ch)
+        {
+            return HexChars.IndexOf(ch) > -1;
         }
         public void SyntaxError(string message, int lineNumber, int linePosition)
         {
             throw new ParserSyntaxException(message, lineNumber, linePosition);
+        }
+        public void SyntaxError(string message)
+        {
+            SyntaxError(message, LineNumber, LinePosition);
+        }
+        public void SyntaxErrorPrevious(string message)
+        {
+            SyntaxError(message, PreviousLineNumber, PreviousLinePosition);
+        }
+        public void SyntaxErrorSaved(string message)
+        {
+            SyntaxError(message, SavedLineNumber, SavedLinePosition);
         }
 
         public static bool IsDigit(char ch)

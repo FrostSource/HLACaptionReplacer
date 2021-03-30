@@ -29,7 +29,7 @@ namespace HLACaptionCompiler
         {
             return ((IEnumerable<ClosedCaption>)Captions).GetEnumerator();
         }
-        public ClosedCaption this[string key]
+        public ClosedCaption? this[string key]
         {
             get
             {
@@ -46,6 +46,10 @@ namespace HLACaptionCompiler
             }
 
             return null;
+        }
+        public bool HasCaption(string sndevt)
+        {
+            return this[sndevt] != null;
         }
 
         /// <summary>

@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "HLACaptionCompiler": {
+      "commandName": "Project",
+      "commandLineArgs": "-v"
+    }
+  }
+}

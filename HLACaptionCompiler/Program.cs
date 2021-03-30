@@ -14,10 +14,13 @@ namespace HLACaptionCompiler
         private static CompilerSettings Settings { get; set; } = new CompilerSettings();
         private static bool WriteSettingsFile { get; set; } = false;
         private static IList<FileInfo> Files { get; set; } = new List<FileInfo>();
+        public const string CaptionSourceFileFormat = "closecaption_{0}{1}.txt";
+        public const string CaptionCompiledFileFormat = "closecaption_{0}.dat";
         public const string CaptionSourceFilePattern = "closecaption_*.txt";
-        public const string CaptionCompiledFilePattern = "closecaption_*.dat";
+        public const string CaptionCompiledFilePattern = "closecaption_{0}{1}*.dat";
         public static DirectoryInfo WorkingDirectory { get; private set; } = new DirectoryInfo(Directory.GetCurrentDirectory());
         public static string SettingsPath { get; set; } = Path.Combine(WorkingDirectory.FullName, "CompilerSettings.json");
+        public static readonly string[] AvailableLanguages = { "Brazilian", "Bulgarian", "Czech", "Danish", "Dutch", "English", "Finnish", "French", "German", "Greek", "Hungarian", "Italian", "Japanese", "Koreana", "Latam", "Norwegian", "Polish", "Portuguese", "Romanian", "Russian", "Schinese", "Spanish", "Swedish", "Tchinese", "Thai", "Turkish", "Ukranian", "Vietnamese" };
 
         static void Main(string[] args)
         {
@@ -76,8 +79,8 @@ namespace HLACaptionCompiler
             var contentCaptionDirectory = new DirectoryInfo(Path.Combine(contentPath, Steam.SteamData.CaptionFolder));
             var gameCaptionDirectory = new DirectoryInfo(Path.Combine(gamePath, Steam.SteamData.CaptionFolder));
             var (filesCompiled, filesTotal) = CompileFolder(contentCaptionDirectory, gameCaptionDirectory);
-            if (filesCompiled > 0)
-                Console.WriteLine($"{filesCompiled}/{filesTotal} files compiled to \"{gameCaptionDirectory.FullName}\"");
+            //if (filesCompiled > 0)
+                Console.WriteLine($"\n{filesCompiled}/{filesTotal} files compiled to \"{gameCaptionDirectory.FullName}\"");
             //else
             //    Console.WriteLine($"Failed to write captions.");
         }
@@ -205,25 +208,76 @@ namespace HLACaptionCompiler
             Console.WriteLine($"{file.Name} failed to compile...");
             return false;
         }
+        public static int CompileFilesToLanguage(List<FileInfo> files, DirectoryInfo dir, string language)
+        {
+            var captions = new ClosedCaptions();
+            var numberOfGoodFiles = 0;
+            foreach (var file in files)
+            {
+                WriteVerbose($"Examining {file.Name} ... ");
+                var parser = new ClosedCaptionFileParser(file);
+                if (parser.TryParse(out var parsed))
+                {
+                    foreach (KeyValuePair<string, string> token in parsed["Tokens"])
+                    {
+                        if (!captions.HasCaption(token.Key))
+                           captions.Add(token.Key, token.Value);
+                    }
+                    WriteLineVerbose("DONE.");
+                    numberOfGoodFiles++;
+                }
+            }
+            if (numberOfGoodFiles == 0)
+            {
+                Console.WriteLine($"No valid files for language \"{language}\"\n");
+                return 0;
+            }
+
+            var outputFileName = string.Format(CaptionCompiledFileFormat, language);
+            WriteVerbose($"Compiling {numberOfGoodFiles}/{files.Count} files to \"{outputFileName}\" ...");
+            captions.Write(Path.Combine(dir.FullName, outputFileName));
+            WriteLineVerbose("DONE\n");
+            return numberOfGoodFiles;
+        }
         public static (int filesCompiled, int filesTotal) CompileFolder(DirectoryInfo from, DirectoryInfo to)
         {
             if (!from.Exists)
             {
                 Console.WriteLine($"\"{Steam.SteamData.CaptionFolder}\" does not not exist in addon \"{GetParentAddonName(from.FullName)}\".");
-                return (0,0);
+                return (0, 0);
             }
-            int successes = 0;
-            var files = from.GetFiles(CaptionSourceFilePattern);
-            if (files.Length <= 0)
+            int filesCompiled = 0;
+            var languageFiles = new Dictionary<string, List<FileInfo>>();
+            // Calculate which files belong to which language
+            var files = from.GetFiles(CaptionSourceFilePattern, SearchOption.AllDirectories);
+            foreach (var file in files)
+            {
+                var name = Path.GetFileNameWithoutExtension(file.FullName)[13..];
+                var _ = name.IndexOf('_');
+                var language = name[..(_ == -1 ? name.Length : _)];
+                // Create list for language if it's new
+                if (!languageFiles.ContainsKey(language))
+                    languageFiles.Add(language, new List<FileInfo>());
+                // Add file to the language list
+                languageFiles[language].Add(file);
+            }
+            // Back out if no files found
+            if (languageFiles.Count <= 0)
             {
                 Console.WriteLine($"No caption content files found in addon \"{GetParentAddonName(from.FullName)}\".");
+                return (0, 0);
             }
-            foreach (var file in files)
+            // Compile each file
+            foreach (var language in languageFiles)
+            {
+                filesCompiled += CompileFilesToLanguage(language.Value, to, language.Key);
+            }
+            /*foreach (var file in files)
             {
                 if (CompileFile(file, to))
                     successes++;
-            }
-            return (successes,files.Length);
+            }*/
+            return (filesCompiled,files.Length);
         }
         public static void WriteSettings()
         {

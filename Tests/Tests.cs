@@ -66,7 +66,7 @@ namespace Tests
                         catagoryName = newCatagory;
                         if (!languageStrings[language.Key].ContainsKey(catagoryName))
                         {
-                            languageStrings[language.Key].Add(catagoryName, new StringBuilder($"\"lang\"\n{{\n\t\"Language\"\t\"{language.Key}\"\n\t\"Tokens\"\n\t{{\n\t\t// {catagoryName}"));
+                            languageStrings[language.Key].Add(catagoryName, new StringBuilder($"\"lang\"\n{{\n\t\"Language\"\t\"{language.Key}\"\n\t\"Tokens\"\n\t{{\n\t\t// {catagoryName}\n"));
                         }
                     }
 
