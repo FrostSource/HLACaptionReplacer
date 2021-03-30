@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 namespace HLACaptionCompiler.Parser
 {
     //TODO: Should extract relevant members into separate GenericLanguageParser class?
+    //TODO: Allow characters to stop enclosed, like \n
     public class GenericParser
     {
         /// <summary>
@@ -30,6 +31,10 @@ namespace HLACaptionCompiler.Parser
         public virtual bool AutomaticallyConvertEscapedCharacters { get; set; } = true;
         public virtual char EscapeCharacter { get; set; } = '\\';
         //public virtual string[] EscapableStrings { get; set; } = { "'", "\"", "\\", "n", "r", "t", "b", "f", "v", "0" };
+        /// <summary>
+        /// Gets or sets the string of chars that will throw a syntax exception if encountered.
+        /// </summary>
+        public virtual string InvalidChars { get; set; } = "";
 
         public string Source { get; private set; }
         public char CurrentChar
@@ -232,6 +237,7 @@ namespace HLACaptionCompiler.Parser
             while (CurrentChar != boundaryChar)
             {
                 if (EOF) SyntaxError($"Missing closing '{boundaryChar}'", linePrev, posPrev);
+                if (InvalidChars.Contains(CurrentChar)) SyntaxError($"Enclosed value ended unexpectedly");
                 string escape;
                 if ((escape = NextEscapeSequence()) != "")
                 {
@@ -259,7 +265,7 @@ namespace HLACaptionCompiler.Parser
             boundaryChars ??= BoundaryChars;
             if (AutoSkipGarbage) SkipGarbage();
             var str = new StringBuilder();
-            while (!EOF && !boundaryChars.Contains(CurrentChar) && !IsWhiteSpace(CurrentChar))
+            while (!EOF && !boundaryChars.Contains(CurrentChar) && !InvalidChars.Contains(CurrentChar) && !IsWhiteSpace(CurrentChar))
             {
                 str.Append(CurrentChar);
                 Advance();
@@ -407,6 +413,21 @@ namespace HLACaptionCompiler.Parser
             }
             return "";
         }
+        /// <summary>
+        /// Gets all characters up to a given <see cref="char"/>.
+        /// <para>This does not skip garbage.</para>
+        /// </summary>
+        /// <param name="ch"></param>
+        /// <returns>The <see cref="string"/> up until the next <paramref name="ch"/> or empty if nothing found. </returns>
+        public string NextUntil(char ch)
+        {
+            var sb = new StringBuilder();
+            while (!EOF && CurrentChar != ch)
+            {
+                sb.Append(CurrentChar);
+            }
+            return sb.ToString();
+        }
         public void SkipGarbage()
         {
             while (IsWhiteSpace(CurrentChar) || IsNextNoSkip(CommentLineStart) || IsNextNoSkip(CommentBlockStart))
@@ -513,6 +534,17 @@ namespace HLACaptionCompiler.Parser
         public static bool CharIsHexidecimal(char ch)
         {
             return HexChars.IndexOf(ch) > -1;
+        }
+        public void SetSource(string source)
+        {
+            Source = source;
+            Index = 0;
+            LineNumber = 1;
+            LinePosition = 1;
+            PreviousLineNumber = 1;
+            PreviousLinePosition = 1;
+            SavedLineNumber = 1;
+            SavedLinePosition = 1;
         }
         public void SyntaxError(string message, int lineNumber, int linePosition)
         {

@@ -175,18 +175,18 @@ namespace HLACaptionCompiler
                 Console.WriteLine($"{i+1}. {addons[i]}");
             }
             Console.Write("> ");
-            var input = Console.ReadKey();
+            var input = Console.ReadLine();
 
             int selection = 1;
-            while (input.Key != ConsoleKey.Enter && !int.TryParse(input.KeyChar.ToString(), out selection) && (selection < 1 || selection > addons.Length))
+            while (input != "" && !int.TryParse(input, out selection) && (selection < 1 || selection > addons.Length))
             {
                 Console.WriteLine(" is not a valid selection.");
                 Console.Write("> ");
-                input = Console.ReadKey();
+                input = Console.ReadLine();
             }
             Console.WriteLine();
 
-            if (input.Key == ConsoleKey.Enter) return "";
+            if (input == "") return "";
             return addons[selection-1];
             
         }
@@ -235,6 +235,7 @@ namespace HLACaptionCompiler
 
             var outputFileName = string.Format(CaptionCompiledFileFormat, language);
             WriteVerbose($"Compiling {numberOfGoodFiles}/{files.Count} files to \"{outputFileName}\" ...");
+            dir.Create();
             captions.Write(Path.Combine(dir.FullName, outputFileName));
             WriteLineVerbose("DONE\n");
             return numberOfGoodFiles;
