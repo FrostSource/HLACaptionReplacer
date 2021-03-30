@@ -29,8 +29,200 @@ namespace Tests
 
             //TestClosedCaptionFileParser();
 
-            QuickAdesiJsonToSource();
+            //QuickAdesiJsonToSource();
+            EnglishCatagoriesToOtherLanguages();
 
+        }
+
+        private static void EnglishCatagoriesToOtherLanguages()
+        {
+            var path = Console.ReadLine().Trim('"');
+            if (!File.Exists(path))
+            {
+                Console.WriteLine("Doesn't exist");
+                return;
+            }
+            var json = File.ReadAllText(path);
+            var captions = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, List<Dictionary<string, dynamic>>>>>(json);
+            //var lines = captions.Select(kvp => kvp.Key + ": " + kvp.Value.ToString());
+            //Console.WriteLine(string.Join(Environment.NewLine, lines));
+
+
+            // string = catagory, string = sound event token
+            var englishCatagories = new Dictionary<string, List<string>>();
+            {
+                var captionDictionary = captions["english"];
+                var catagoryName = "";
+
+                foreach (var caption in captionDictionary["GetCaptions"])
+                {
+                    var captionToken = ((System.Text.Json.JsonElement)caption["GetRealName"]).ToString();
+                    var captionText = ((System.Text.Json.JsonElement)caption["GetText"]).ToString();
+                    var newCatagory = GetCatagory(captionToken);
+                    if (newCatagory != "")
+                    {
+                        catagoryName = newCatagory;
+                        if (!englishCatagories.ContainsKey(catagoryName))
+                        {
+                            englishCatagories.Add(catagoryName, new List<string>());
+                        }
+                    }
+                    englishCatagories[catagoryName].Add(captionToken);
+                }
+                //captions.Remove("english");
+            }
+
+
+            var languageStrings = new Dictionary<string, Dictionary<string, StringBuilder>>();
+            foreach (var language in captions)
+            {
+                var dict = new Dictionary<string, StringBuilder>();
+                var catagoryName = "";
+                languageStrings.Add(language.Key, dict);
+
+                foreach (var caption in language.Value["GetCaptions"])
+                {
+                    var name = ((System.Text.Json.JsonElement)caption["GetRealName"]).ToString();
+                    var text = ((System.Text.Json.JsonElement)caption["GetText"]).ToString();
+                    
+                    var newCatagory = "";
+                    if (language.Key == "english")
+                        newCatagory = GetCatagory(name);
+                    else
+                        newCatagory = GetCatagoryFromCatagoryDictionary(englishCatagories, name);
+
+                    if (newCatagory != "")
+                    {
+                        catagoryName = newCatagory;
+                        if (!languageStrings[language.Key].ContainsKey(catagoryName))
+                        {
+                            languageStrings[language.Key].Add(catagoryName, new StringBuilder($"\"lang\"\n{{\n\t\"Language\"\t\"{language.Key}\"\n\t\"Tokens\"\n\t{{\n\t\t// {catagoryName}\n"));
+                        }
+                    }
+
+                    languageStrings[language.Key][catagoryName].Append($"\t\t\"{name}\"\t\"{ConvertEscapedToUnescaped(text)}\"\n");
+                }
+            }
+
+            WriteLanguageCatagories(languageStrings, path);
+
+
+            // private helper method
+            string GetCatagoryFromCatagoryDictionary(Dictionary<string, List<string>> catagories, string name)
+            {
+                foreach (var catagory in catagories)
+                {
+                    if (catagory.Value.Contains(name))
+                    {
+                        return catagory.Key;
+                    }
+                }
+                return "";
+            }
+
+
+        }
+
+        private static string GetCatagory(string captionToken)
+        {
+            const string generic = "Generic";
+            const string alyx_generic = "Alyx Generic";
+            const string alyx_choreo = "Alyx Choreo";
+            const string eli_choreo = "Eli Choreo";
+            const string gman_choreo = "Gman Choreo";
+            const string russel_choreo = "Russel Choreo";
+            const string gary_choreo = "Gary Choreo";
+            const string overwatch = "Overwatch";
+            const string larry_choreo = "Larry Choreo";
+            const string olga_choreo = "Olga Choreo";
+            const string drone_choreo = "Drone Choreo";
+            const string combine_choreo = "Combine Choreo";
+            const string combine_grunt = "Combine Grunt";
+            const string combine_officer = "Combine Officer";
+            const string combine_suppressor = "Combine Suppressor";
+            const string combine_charger = "Combine Charger";
+            const string contractor_choreo = "Contractor Choreo";
+            const string sfx = "SFX";
+            const string commentary = "Commentary";
+
+            return captionToken switch
+            {
+                "3952443579" => generic,
+
+                "vo.01_01104" => alyx_choreo,
+                "vo.01_20000" => alyx_generic,
+                "vo.01_20001" => alyx_choreo,
+                "vo.01_20011" => alyx_generic,
+                "vo.01_20031" => alyx_choreo,
+                "vo.01_12754" => alyx_generic,
+                "vo.01_12766" => alyx_choreo,
+                "vo.01_20179" => alyx_generic,
+                "vo.01_20271" => alyx_choreo,
+                "vo.01_13146" => alyx_generic,
+                "vo.01_13200" => alyx_choreo,
+                "vo.01_60021" => alyx_generic,
+                "vo.01_60030" => alyx_choreo,
+                "vo.01_70649" => alyx_generic,
+                "vo.01_70859" => alyx_choreo,
+                "vo.01_71000" => alyx_generic,
+                "vo.01_71021" => alyx_choreo,
+                "vo.01_71055" => alyx_generic,
+                "vo.01_71075" => alyx_choreo,
+                "vo.01_90007" => alyx_generic,
+                "vo.01_99958" => alyx_choreo,
+                "vo.01_00001" => alyx_generic,
+
+                "vo.02_01103" => eli_choreo,
+                "vo.04_00200" => gman_choreo,
+                "vo.05_00003" => russel_choreo,
+                "vo.06_00001" => gary_choreo,
+                "vo.07_10000" => overwatch,
+                "vo.12_00001" => larry_choreo,
+                "vo.13_00101" => olga_choreo,
+                "vo.25_1000" => drone_choreo,
+                "vo.27_1107" => combine_choreo,
+                "vo.31_00002" => contractor_choreo,
+                "vo.combine.charger.advancing_on_target_01" => combine_charger,
+                "341443817" => combine_choreo,
+                "vo.combine.grunt.advancing_on_target_01" => combine_grunt,
+                "vo.combine.officer.advancing_on_target_01" => combine_officer,
+                "vo.combine.suppressor.advancing_on_target_01" => combine_suppressor,
+                "combine.radiooff" => sfx,
+                "commentary.a1_01_intro1" => commentary,
+
+                _ => ""
+            };
+        }
+
+        static string ConvertEscapedToUnescaped(string str)
+        {
+            var sb = new StringBuilder(str);
+
+            sb.Replace("\n", "\\n");
+            sb.Replace("\t", "\\t");
+            sb.Replace("\"", "\\\"");
+            sb.Replace("\u0001", "\\u0001");
+            sb.Replace("\u0002", "\\u0002");
+            sb.Replace("\u0003", "\\u0003");
+            sb.Replace("\u0005", "\\u0005");
+
+            return sb.ToString();
+        }
+
+        private static void WriteLanguageCatagories(Dictionary<string, Dictionary<string, StringBuilder>>  languageStrings, string path)
+        {
+            foreach (var language in languageStrings)
+            {
+                foreach (var catagory in language.Value)
+                {
+                    var source = catagory.Value;
+                    source.Append("\t}\n}");
+                    var newPath = Path.Combine(Path.GetDirectoryName(path), "languages", language.Key.ToLower(), $"closecaption_{language.Key.ToLower()}_{catagory.Key.ToLower().Replace(" ", "_")}.txt");
+                    FileInfo file = new FileInfo(newPath);
+                    file.Directory.Create();
+                    File.WriteAllText(file.FullName, source.ToString());
+                }
+            }
         }
 
         public static void QuickAdesiJsonToSource()
@@ -70,107 +262,13 @@ namespace Tests
                         }
                     }
 
-                    languageStrings[language.Key][catagoryName].Append($"\t\t\"{name}\"\t\"{ConvertEscaped(text)}\"\n");
+                    languageStrings[language.Key][catagoryName].Append($"\t\t\"{name}\"\t\"{ConvertEscapedToUnescaped(text)}\"\n");
                 }
                 //source.Append("\t}\n}");
                 //File.WriteAllText(Path.Combine(Path.GetDirectoryName(path), $"closecaption_{language.Key}.txt"), source.ToString());
             }
 
-            foreach (var language in languageStrings)
-            {
-                foreach (var catagory in language.Value)
-                {
-                    var source = catagory.Value;
-                    source.Append("\t}\n}");
-                    var newPath = Path.Combine(Path.GetDirectoryName(path), "languages", language.Key.ToLower(), $"closecaption_{language.Key.ToLower()}_{catagory.Key.ToLower().Replace(" ", "_")}.txt");
-                    FileInfo file = new FileInfo(newPath);
-                    file.Directory.Create();
-                    File.WriteAllText(file.FullName, source.ToString());
-                }
-            }
-
-            static string GetCatagory(string name)
-            {
-                const string alyx_generic = "Alyx Generic";
-                const string alyx_choreo = "Alyx Choreo";
-                const string eli_choreo = "Eli Choreo";
-                const string gman_choreo = "Gman Choreo";
-                const string russel_choreo = "Russel Choreo";
-                const string gary_choreo = "Gary Choreo";
-                const string overwatch = "Overwatch";
-                const string larry_choreo = "Larry Choreo";
-                const string olga_choreo = "Olga Choreo";
-                const string drone_choreo = "Drone Choreo";
-                const string combine_choreo = "Combine Choreo";
-                const string combine_grunt = "Combine Grunt";
-                const string combine_officer = "Combine Officer";
-                const string combine_suppressor = "Combine Suppressor";
-                const string combine_charger = "Combine Charger";
-                const string contractor_choreo = "Contractor Choreo";
-                const string sfx = "SFX";
-                const string commentary = "Commentary";
-
-                return name switch
-                {
-                    "vo.01_01104" => alyx_choreo,
-                    "vo.01_20000" => alyx_generic,
-                    "vo.01_20001" => alyx_choreo,
-                    "vo.01_20011" => alyx_generic,
-                    "vo.01_20031" => alyx_choreo,
-                    "vo.01_12754" => alyx_generic,
-                    "vo.01_12766" => alyx_choreo,
-                    "vo.01_20179" => alyx_generic,
-                    "vo.01_20271" => alyx_choreo,
-                    "vo.01_13146" => alyx_generic,
-                    "vo.01_13200" => alyx_choreo,
-                    "vo.01_60021" => alyx_generic,
-                    "vo.01_60030" => alyx_choreo,
-                    "vo.01_70649" => alyx_generic,
-                    "vo.01_70859" => alyx_choreo,
-                    "vo.01_71000" => alyx_generic,
-                    "vo.01_71021" => alyx_choreo,
-                    "vo.01_71055" => alyx_generic,
-                    "vo.01_71075" => alyx_choreo,
-                    "vo.01_90007" => alyx_generic,
-                    "vo.01_99958" => alyx_choreo,
-                    "vo.01_00001" => alyx_generic,
-
-                    "vo.02_01103" => eli_choreo,
-                    "vo.04_00200" => gman_choreo,
-                    "vo.05_00003" => russel_choreo,
-                    "vo.06_00001" => gary_choreo,
-                    "vo.07_10000" => overwatch,
-                    "vo.12_00001" => larry_choreo,
-                    "vo.13_00101" => olga_choreo,
-                    "vo.25_1000" => drone_choreo,
-                    "vo.27_1107" => combine_choreo,
-                    "vo.31_00002" => contractor_choreo,
-                    "vo.combine.charger.advancing_on_target_01" => combine_charger,
-                    "341443817" => combine_choreo,
-                    "vo.combine.grunt.advancing_on_target_01" => combine_grunt,
-                    "vo.combine.officer.advancing_on_target_01" => combine_officer,
-                    "vo.combine.suppressor.advancing_on_target_01" => combine_suppressor,
-                    "combine.radiooff" => sfx,
-                    "commentary.a1_01_intro1" => commentary,
-
-                    _ => ""
-                };
-            }
-
-            static string ConvertEscaped(string str)
-            {
-                var sb = new StringBuilder(str);
-
-                sb.Replace("\n", "\\n");
-                sb.Replace("\t", "\\t");
-                sb.Replace("\"", "\\\"");
-                sb.Replace("\u0001", "\\u0001");
-                sb.Replace("\u0002", "\\u0002");
-                sb.Replace("\u0003", "\\u0003");
-                sb.Replace("\u0005", "\\u0005");
-
-                return sb.ToString();
-            }
+            WriteLanguageCatagories(languageStrings, path);
         }
 
         public static void TestClosedCaptionFileParser()
