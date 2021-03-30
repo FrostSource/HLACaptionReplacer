@@ -14,36 +14,36 @@ namespace HLACaptionCompiler.Parser
         /// <summary>
         /// Gets or sets if white space should be skipped by the parser when finding elements such as numbers or words.
         /// </summary>
-        public bool AutoSkipGarbage { get; set; } = true;
+        public bool AutoSkipGarbage { get; protected set; } = true;
         /// <summary>
         /// Gets or sets the chars that define the default boundary between sequences such as words and numbers.
         /// A sequence will stop when it encounters one of the following: White space, boundary char, EOF.
         /// </summary>
-        public virtual string BoundaryChars { get; set; } = ",.{}[]/-=+()!'\"";
-        public virtual string WhiteSpaceChars { get; set; } = " \t\r\f\n";
+        public virtual string BoundaryChars { get; protected set; } = ",.{}[]/-=+()!'\"";
+        public virtual string WhiteSpaceChars { get; protected set; } = " \t\r\f\n";
         /// <summary>
         /// Gets or sets the string that indicates the start of a line comment.
         /// </summary>
-        public virtual string CommentLineStart { get; set; } = "//";
-        public virtual string CommentBlockStart { get; set; } = "/*";
-        public virtual string CommentBlockEnd { get; set; } = "*/";
+        public virtual string CommentLineStart { get; protected set; } = "//";
+        public virtual string CommentBlockStart { get; protected set; } = "/*";
+        public virtual string CommentBlockEnd { get; protected set; } = "*/";
 
-        public virtual bool AllowCharacterEscaping { get; set; } = true;
-        public virtual bool AutomaticallyConvertEscapedCharacters { get; set; } = true;
-        public virtual char EscapeCharacter { get; set; } = '\\';
+        public virtual bool AllowCharacterEscaping { get; protected set; } = true;
+        public virtual bool AutomaticallyConvertEscapedCharacters { get; protected set; } = true;
+        public virtual char EscapeCharacter { get; protected set; } = '\\';
         //public virtual string[] EscapableStrings { get; set; } = { "'", "\"", "\\", "n", "r", "t", "b", "f", "v", "0" };
         /// <summary>
         /// Gets or sets the string of chars that will throw a syntax exception if encountered.
         /// Will not throw exception if encountered during garbage skipping.
         /// </summary>
-        public virtual string InvalidChars { get; set; } = "";
+        public virtual string InvalidChars { get; protected set; } = "";
         /// <summary>
         /// Gets or sets the string of chars that will throw a syntax exception if NOT encountered.
         /// Set as empty string to ignore.
         /// </summary>
-        public virtual string ValidChars { get; set; } = "";
+        public virtual string ValidChars { get; protected set; } = "";
 
-        public string Source { get; private set; }
+        public string Source { get; protected set; }
         public char CurrentChar
         {
             get
@@ -64,18 +64,18 @@ namespace HLACaptionCompiler.Parser
                     return Source[Index + 1];
             }
         }
-        public int Index { get; private set; } = 0;
-        public int LineNumber { get; private set; } = 1;
-        public int LinePosition { get; private set; } = 1;
-        public int PreviousLineNumber { get; private set; } = 1;
-        public int PreviousLinePosition { get; private set; } = 1;
-        public int SavedLineNumber { get; private set; } = 1;
-        public int SavedLinePosition { get; private set; } = 1;
+        public int Index { get; protected set; } = 0;
+        public int LineNumber { get; protected set; } = 1;
+        public int LinePosition { get; protected set; } = 1;
+        public int PreviousLineNumber { get; protected set; } = 1;
+        public int PreviousLinePosition { get; protected set; } = 1;
+        public int SavedLineNumber { get; protected set; } = 1;
+        public int SavedLinePosition { get; protected set; } = 1;
         public bool EOF { get => Index >= Source.Length; }
 
-        public const string AlphaChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        public const string DigitChars = "1234567890";
-        public const string HexChars = DigitChars + "abcdefABCDEF";
+        public static string AlphaChars { get; protected set; } = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        public static string DigitChars { get; protected set; } = "1234567890";
+        public static string HexChars { get; protected set; } = DigitChars + "abcdefABCDEF";
 
         public GenericParser()
         {
@@ -225,7 +225,7 @@ namespace HLACaptionCompiler.Parser
         /// </summary>
         /// <param name="expecting">Optionally specify the word that is expected to provide better error reporting.</param>
         /// <returns></returns>
-        public virtual string NextWord(string expecting = "", string boundaryChars = null, string invalidChars = null, string validChars = null, bool failOnEmpty = true)
+        public virtual string NextWord(string expecting = "", string boundaryChars = null, string invalidChars = null, string validChars = null, bool failOnEmpty = true, bool allowWhiteSpace = false)
         {
             boundaryChars ??= BoundaryChars;
             invalidChars ??= InvalidChars;
@@ -234,12 +234,24 @@ namespace HLACaptionCompiler.Parser
 
             if (AutoSkipGarbage) SkipGarbage();
             var str = new StringBuilder();
-            while (!EOF && !boundaryChars.Contains(CurrentChar) && !IsWhiteSpace(CurrentChar))
+            while (!EOF && !boundaryChars.Contains(CurrentChar) && (allowWhiteSpace || !IsWhiteSpace(CurrentChar)))
             {
                 if (invalidChars.Contains(CurrentChar)) SyntaxError($"Invalid character \"{CurrentChar}\", expecting {expecting}");
                 if (validChars != "" && !validChars.Contains(CurrentChar)) SyntaxError($"Invalid character \"{CurrentChar}\", expecting {expecting}");
-                str.Append(CurrentChar);
-                Advance();
+                
+                string escape;
+                if ((escape = NextEscapeSequence()) != "")
+                {
+                    if (AutomaticallyConvertEscapedCharacters)
+                        str.Append(ConvertStringToEscape(escape));
+                    else
+                        str.Append(escape);
+                }
+                else
+                {
+                    str.Append(CurrentChar);
+                    Advance();
+                }
             }
             if (failOnEmpty && str.Length == 0)
             {
@@ -270,7 +282,7 @@ namespace HLACaptionCompiler.Parser
             var linePrev = LineNumber;
             var posPrev = LinePosition;
 
-            var enclosedValue = NextWord("", boundaryChar.ToString(), invalidChars, failOnEmpty:false);
+            var enclosedValue = NextWord("", boundaryChar.ToString(), invalidChars, failOnEmpty:false, allowWhiteSpace:true);
             if (EOF || CurrentChar != boundaryChar) SyntaxError($"Missing closing '{boundaryChar}'", linePrev, posPrev);
             Advance();
             return enclosedValue;

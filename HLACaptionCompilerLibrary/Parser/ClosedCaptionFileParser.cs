@@ -9,16 +9,16 @@ namespace HLACaptionCompiler.Parser
 {
     public class ClosedCaptionFileParser : GenericParser
     {
-        public override string BoundaryChars { get; set; } = "{}\"";
-        public override string CommentBlockStart { get; set; } = "";
-        public override string CommentBlockEnd { get; set; } = "";
+        public override string BoundaryChars { get; protected set; } = "{}\"";
+        public override string CommentBlockStart { get; protected set; } = "";
+        public override string CommentBlockEnd { get; protected set; } = "";
         //public override bool AutomaticallyConvertEscapedCharacters { get; set; } = false;
-        public override string InvalidChars { get; set; } = "\n";
+        public override string InvalidChars { get; protected set; } = "\n";
 
         // Custom properties
         public bool AllowPreProcessors { get; set; } = true;
         public bool AllowHashRegions { get; set; } = true;
-        public bool IsStrict { get; set; } = false;
+        public bool IsStrict { get; set; } = true;
 
 
         public ClosedCaptionFileParser(string source):base(source)
@@ -58,17 +58,24 @@ namespace HLACaptionCompiler.Parser
             if (AllowPreProcessors)
             {
                 //var preprocessorValues = new Dictionary<string, string>();
-                while (IsNext("//#"))
+                while (IsNextNoSkip("//#"))
                 {
                     Advance(3);
-                    var name = NextWord("pre-processor name");
+                    var name = NextWord("pre-processor name", " \t", "\r\n");
+                    var value = NextWord("pre-process value");
+                    SkipLine();
                     switch (name)
                     {
 
                         // Named values
                         default:
-                            var value = NextWord("pre-process value");
+                            var line = LineNumber;
                             SetSource(Source[Index..].Replace(name, value));
+                            //SkipLine();
+                            LineNumber = line;
+                            //var index = Index - 1;
+                            //SetSource(Source.Replace(name, value));
+                            //Advance(index);
                             //preprocessorValues.Add(name, value);
                             break;
                     }
