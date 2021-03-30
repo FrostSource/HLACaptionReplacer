@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace HLACaptionCompiler.Parser
@@ -33,8 +34,14 @@ namespace HLACaptionCompiler.Parser
         //public virtual string[] EscapableStrings { get; set; } = { "'", "\"", "\\", "n", "r", "t", "b", "f", "v", "0" };
         /// <summary>
         /// Gets or sets the string of chars that will throw a syntax exception if encountered.
+        /// Will not throw exception if encountered during garbage skipping.
         /// </summary>
         public virtual string InvalidChars { get; set; } = "";
+        /// <summary>
+        /// Gets or sets the string of chars that will throw a syntax exception if NOT encountered.
+        /// Set as empty string to ignore.
+        /// </summary>
+        public virtual string ValidChars { get; set; } = "";
 
         public string Source { get; private set; }
         public char CurrentChar
@@ -214,6 +221,33 @@ namespace HLACaptionCompiler.Parser
             Advance(str.Length);
         }
         /// <summary>
+        /// Gets the next non-whitespace string of characters in the source text.
+        /// </summary>
+        /// <param name="expecting">Optionally specify the word that is expected to provide better error reporting.</param>
+        /// <returns></returns>
+        public virtual string NextWord(string expecting = "", string boundaryChars = null, string invalidChars = null, string validChars = null, bool failOnEmpty = true)
+        {
+            boundaryChars ??= BoundaryChars;
+            invalidChars ??= InvalidChars;
+            validChars ??= ValidChars;
+            expecting = expecting == "" ? "word" : expecting;
+
+            if (AutoSkipGarbage) SkipGarbage();
+            var str = new StringBuilder();
+            while (!EOF && !boundaryChars.Contains(CurrentChar) && !IsWhiteSpace(CurrentChar))
+            {
+                if (invalidChars.Contains(CurrentChar)) SyntaxError($"Invalid character \"{CurrentChar}\", expecting {expecting}");
+                if (validChars != "" && !validChars.Contains(CurrentChar)) SyntaxError($"Invalid character \"{CurrentChar}\", expecting {expecting}");
+                str.Append(CurrentChar);
+                Advance();
+            }
+            if (failOnEmpty && str.Length == 0)
+            {
+                SyntaxError($"Expecting {expecting}");
+            }
+            return str.ToString();
+        }
+        /// <summary>
         /// Returns the next <see cref="string"/> enclosed between a given <see cref="char"/>.
         /// <para>Makes use of <see cref="EscapeCharacter"/> and <see cref="EscapableStrings"/>.</para>
         /// <para>Does not return the matching <paramref name="boundaryChar"/>.</para>
@@ -222,8 +256,10 @@ namespace HLACaptionCompiler.Parser
         /// <returns></returns>
         /// <exception cref="ParserEOFException">Thrown when the end of the source is found instead of a character.</exception>
         /// <exception cref="ParserSyntaxException">Thrown when <paramref name="boundaryChar"/> is not at the beginning or end.</exception>
-        public virtual string NextEnclosed(char boundaryChar = '"')
+        public virtual string NextEnclosed(char boundaryChar = '"', string invalidChars = null)
         {
+            invalidChars ??= InvalidChars;
+
             if (AutoSkipGarbage) SkipGarbage();
             if (Next() != boundaryChar)
             {
@@ -233,10 +269,16 @@ namespace HLACaptionCompiler.Parser
             // separately from SavePosition so it doesn't override child classes.
             var linePrev = LineNumber;
             var posPrev = LinePosition;
-            var str = new StringBuilder();
+
+            var enclosedValue = NextWord("", boundaryChar.ToString(), invalidChars, failOnEmpty:false);
+            if (EOF || CurrentChar != boundaryChar) SyntaxError($"Missing closing '{boundaryChar}'", linePrev, posPrev);
+            Advance();
+            return enclosedValue;
+
+            /*var str = new StringBuilder();
             while (CurrentChar != boundaryChar)
             {
-                if (EOF) SyntaxError($"Missing closing '{boundaryChar}'", linePrev, posPrev);
+                if (EOF) 
                 if (InvalidChars.Contains(CurrentChar)) SyntaxError($"Enclosed value ended unexpectedly");
                 string escape;
                 if ((escape = NextEscapeSequence()) != "")
@@ -253,28 +295,7 @@ namespace HLACaptionCompiler.Parser
                 }
             }
             Advance();
-            return str.ToString();
-        }
-        /// <summary>
-        /// Gets the next non-whitespace string of characters in the source text.
-        /// </summary>
-        /// <param name="expecting">Optionally specify the word that is expected to provide better error reporting.</param>
-        /// <returns></returns>
-        public virtual string NextWord(string expecting = "word", string boundaryChars = null)
-        {
-            boundaryChars ??= BoundaryChars;
-            if (AutoSkipGarbage) SkipGarbage();
-            var str = new StringBuilder();
-            while (!EOF && !boundaryChars.Contains(CurrentChar) && !InvalidChars.Contains(CurrentChar) && !IsWhiteSpace(CurrentChar))
-            {
-                str.Append(CurrentChar);
-                Advance();
-            }
-            if (str.Length == 0)
-            {
-                SyntaxError($"Expecting \"{(expecting == "" ? "word" : expecting)}\"");
-            }
-            return str.ToString();
+            return str.ToString();*/
         }
         /// <summary>
         /// Gets the next integer in the source text
@@ -283,7 +304,11 @@ namespace HLACaptionCompiler.Parser
         public virtual string NextInteger()
         {
             if (AutoSkipGarbage) SkipGarbage();
-            var str = new StringBuilder();
+
+            var integer = NextWord("integer", validChars: DigitChars);
+            return integer;
+
+            /*var str = new StringBuilder();
             while (!EOF && !BoundaryChars.Contains(CurrentChar) && !IsWhiteSpace(CurrentChar))
             {
                 if (!IsDigit(CurrentChar)) SyntaxError($"Unexpected character '{CurrentChar}' in number");
@@ -294,7 +319,7 @@ namespace HLACaptionCompiler.Parser
             {
                 SyntaxError("Expecting integer");
             }
-            return str.ToString();
+            return str.ToString();*/
         }
         /// <summary>
         /// Gets the next decimal number in the source text.
@@ -304,7 +329,19 @@ namespace HLACaptionCompiler.Parser
         public virtual string NextDecimal(char decimalChar = '.')
         {
             if (AutoSkipGarbage) SkipGarbage();
-            var boundaryChars = BoundaryChars;
+
+            string decimalPre = NextWord("decimal number", BoundaryChars + decimalChar, validChars: DigitChars);
+            string decimalPost = "";
+            if (CurrentChar == decimalChar)
+            {
+                decimalPost += decimalChar;
+                Advance();
+                decimalPost += NextWord("number after decimal", BoundaryChars, validChars: DigitChars, invalidChars:decimalChar.ToString());
+            }
+
+            return decimalPre + decimalPost;
+
+            /*var boundaryChars = BoundaryChars;
             int pos;
             if ((pos = BoundaryChars.IndexOf(decimalChar)) != -1)
                 boundaryChars = BoundaryChars.Remove(pos, 1);
@@ -325,7 +362,7 @@ namespace HLACaptionCompiler.Parser
             {
                 SyntaxError("Expecting decimal number");
             }
-            return str.ToString();
+            return str.ToString();*/
         }
         /// <summary>
         /// Gets a sequence of characters with a give ruleset of characters.
@@ -342,10 +379,15 @@ namespace HLACaptionCompiler.Parser
         public virtual string NextSequence(string validStartChars, string validChars)
         {
             if (AutoSkipGarbage) SkipWhiteSpace();
-            if (!validStartChars.Contains(CurrentChar)) SyntaxError($"Expecting one of '{validStartChars}' but found '{CharToString(CurrentChar)}'");
-            Advance();
 
-            var str = new StringBuilder();
+            
+            if (!validStartChars.Contains(CurrentChar)) SyntaxError($"Expecting one of '{validStartChars}' but found '{CharToString(CurrentChar)}'");
+            string sequence = CurrentChar.ToString();
+            Advance();
+            sequence += NextWord($"one of '{validStartChars}'", validChars: validChars, failOnEmpty: false);
+            return sequence;
+
+            /*var str = new StringBuilder();
             while (!EOF && !IsWhiteSpace(CurrentChar))
             {
                 if (!validChars.Contains(CurrentChar)) SyntaxError($"Expecting one of '{validChars}' but found '{CharToString(CurrentChar)}'");
@@ -356,7 +398,7 @@ namespace HLACaptionCompiler.Parser
             {
                 SyntaxError("Expecting sequence");
             }
-            return str.ToString();
+            return str.ToString();*/
         }
         /// <summary>
         /// Gets the next escape sequence as a string if an escape character is next.
@@ -427,6 +469,17 @@ namespace HLACaptionCompiler.Parser
                 sb.Append(CurrentChar);
             }
             return sb.ToString();
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="regex"></param>
+        /// <returns></returns>
+        public string NextRegex(string regex)
+        {
+            var rx = new Regex(@"$" + regex);
+            var match = rx.Match(Source);
+            return match.Value;
         }
         public void SkipGarbage()
         {
