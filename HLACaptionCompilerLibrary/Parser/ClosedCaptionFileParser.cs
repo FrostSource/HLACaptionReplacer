@@ -110,8 +110,17 @@ namespace HLACaptionCompiler.Parser
 
             while (Peek() != '}')
             {
+                SavePosition();
                 var key = NextWordOrString();
                 var value = NextWordOrString();
+                if (tokens.ContainsKey(key))
+                {
+                    if (IsStrict)
+                    {
+                        SyntaxErrorSaved($"Duplicate key found for {key}");
+                    }
+                    continue;
+                }
                 tokens.Add(key, value);
             }
             parsed.Add("Tokens", tokens);
