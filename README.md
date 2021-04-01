@@ -1,11 +1,12 @@
-The program allows you to quickly compile multiple caption source files into the "game" folder of your addon.
+# What is it?
 
+The program allows you to quickly compile multiple caption source files into the "game" folder of your addon.
 
 # Using the program
 
 ## Running the exe
 
-HLACaptionCompiler.exe will run a little differently depending on the context:
+`HLACaptionCompiler.exe` will run a little differently depending on the context:
 
 1. If executed from an addon folder it will search for captions source files and automatically compile any into the related "game" folder for that addon.
 
@@ -13,15 +14,17 @@ HLACaptionCompiler.exe will run a little differently depending on the context:
 
 3. If a valid caption source file (or files) is dragged onto the exe, the file(s) will be compiled and the output directory will be the same as the file(s).
 
-When compiling, the source files will be examined 
+When compiling, the source files will be examined for any errors it can catch including duplicate tokens. It has simple error reporting to tell you the line number and position it thinks the error occured in the source file to help narrow it down.
 
 ## From the command line
+
+`HLACaptionCompiler.exe` accepts files, directories, short hand options prepended by a dash "`-s`", and long hand options predended by double dashes "`--settings`". Short hand options can also be chained together with a single dash "`-spv`"
 
 The following is an example of compiling an addon with `verbose` and `pause` settings:
 
     HLACaptionCompiler.exe -vp "C:\Program Files (x86)\Steam\steamapps\common\Half-Life Alyx\content\hlvr_addons\my_addon"
 
-# Settings
+## Command line settings/options
 
 If executing the program from the command line you can specify some arguments to alter its behavior. A settings file can also be generated for those who don't like to use the command line.
 
@@ -45,13 +48,13 @@ Pre-processors are special commands at the top of the file that perform actions 
     
     # pre-processor-name pre-processor-value
 
-The name and value must be on the same line and the name may not contain whitespace. Quotes cannot be used to avoid this limitation as quotes are valid characters for the name and value. The value is the first non-whitespace character after the name until the end of the line, and may be optional for some pre-processors. If you want the compiler to temporarily ignore a pre-processor you can simply comment it out:
+The `name` and `value` must be on the same line and the `name` may not contain whitespace. Quotes cannot be used to avoid this limitation as quotes are valid characters for the `name` and `value`. The `value` is the *first non-whitespace* character after the name *until the end of the line*, and may be optional for some pre-processors. If you want the compiler to temporarily ignore a pre-processor you can simply comment it out:
 
     //# pre-processor-name pre-processor-value
 
 ## List of pre-processors
 
-- Key/Value
+- **Key/Value**
   
     Every instance of the `key` in the source file will be replace with its assigned `value`, allowing you to define a color or piece of text once and instance it anywhere in the file. This means it's important to choose a name that will not be encountered anywhere in your actualy dialogue, it's a good idea to use symbols to differentiate them for regular dictionary words.
 

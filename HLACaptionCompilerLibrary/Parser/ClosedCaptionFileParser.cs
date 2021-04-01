@@ -75,6 +75,7 @@ namespace HLACaptionCompiler.Parser
                             var line = LineNumber;
                             SetSource(Source[Index..].Replace(name, value));
                             //SkipLine();
+                            // Advance the line number artificially 
                             LineNumber = line;
                             //var index = Index - 1;
                             //SetSource(Source.Replace(name, value));
@@ -110,14 +111,16 @@ namespace HLACaptionCompiler.Parser
 
             while (Peek() != '}')
             {
-                SavePosition();
+                // NextWordOrString uses SavePosition so we save manually.
+                var savedLineNumber = LineNumber;
+                var savedLinePosition = LinePosition;
                 var key = NextWordOrString();
                 var value = NextWordOrString();
                 if (tokens.ContainsKey(key))
                 {
                     if (IsStrict)
                     {
-                        SyntaxErrorSaved($"Duplicate key found for {key}");
+                        SyntaxError($"Duplicate key found for {key}", savedLineNumber, savedLinePosition);
                     }
                     continue;
                 }
