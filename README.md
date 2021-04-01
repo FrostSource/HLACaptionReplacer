@@ -1,23 +1,94 @@
-# HLACaptionReplacer
+The program allows you to quickly compile multiple caption source files into the "game" folder of your addon.
 
-This program can, in theory, write Source 2 caption files in the compiled format. Captions can be successfully modified provided they don't change the byte order too much.
-I still don't understand the significance of the Blocks within the caption file; adding just one more will cause it to be loaded incorrectly.
-Custom sound events also won't trigger the captions that relate to them.
 
-HLACaptionReplacer takes two input files through command line arguments to modify a caption file, e.g. `closecaption_english.dat` and `my_modify_file.txt`
-It then outputs a new file in the same location as the compiled caption file, e.g. `closecaption_english_new.dat`
+# Using the program
 
-This example modification file replaces lines that show during the `speech:dark_convo_2` SpeakConcept:
-```
-// Basic comments work
+## Running the exe
 
-// A sound event name on its own tells the program to delete the caption
-vo.01_13035
+HLACaptionCompiler.exe will run a little differently depending on the context:
 
-// Sound event name followed by caption text tells the program to replace it with that text
-vo.05_02219 <HEADSET><clr:210,100,210>Example replaced caption
-vo.01_13036 <clr:100,190,100>Umm… do you have <i>anything<i> to say to me mate??
-vo.05_00158 <HEADSET><clr:210,100,210>Ah! Check this!<cr>Alyx, you one fine hottie, ya know that?
-```
+1. If executed from an addon folder it will search for captions source files and automatically compile any into the related "game" folder for that addon.
 
-If you don't want to build and run HLACaptionReplacer separately, you can look at the Test project to see how you can run the program with your chosen arguments.
+2. If executed outside of an addon folder it will present you with a menu to choose from any addons it finds in your Half-Life: Alyx installation path.
+
+3. If a valid caption source file (or files) is dragged onto the exe, the file(s) will be compiled and the output directory will be the same as the file(s).
+
+When compiling, the source files will be examined 
+
+## From the command line
+
+The following is an example of compiling an addon with `verbose` and `pause` settings:
+
+    HLACaptionCompiler.exe -vp "C:\Program Files (x86)\Steam\steamapps\common\Half-Life Alyx\content\hlvr_addons\my_addon"
+
+# Settings
+
+If executing the program from the command line you can specify some arguments to alter its behavior. A settings file can also be generated for those who don't like to use the command line.
+
+Any non-valid setting will be considered as a source file and checked for validity. If the path is a single source file it will be compiled to its original location, if the path is an addon folder, all source files in the addon will be compiled. You may pass as many files and addons as command line arguments as you wish.
+
+- -s / --settings
+    
+    Generates a `settings.json` file or overwrites the existing one, allowing the user to modify settings without using the command line. The program will read from this file when launching.
+
+- -p / --pause
+  
+    The program will pause after finishing and wait for user input. Useful for debugging files which aren't compiling.
+
+- -v / --verbose
+  
+    The program will output more messages to the console as it completes each action or finds a problem.
+
+# Pre-Processors
+
+Pre-processors are special commands at the top of the file that perform actions on the input text (caption source) before it is examined and compiled. Pre-processors are fairly strict in their formatting and can only exist at the top of the file before `"lang"` is encountered. They have the following format:
+    
+    # pre-processor-name pre-processor-value
+
+The name and value must be on the same line and the name may not contain whitespace. Quotes cannot be used to avoid this limitation as quotes are valid characters for the name and value. The value is the first non-whitespace character after the name until the end of the line, and may be optional for some pre-processors. If you want the compiler to temporarily ignore a pre-processor you can simply comment it out:
+
+    //# pre-processor-name pre-processor-value
+
+## List of pre-processors
+
+- Key/Value
+  
+    Every instance of the `key` in the source file will be replace with its assigned `value`, allowing you to define a color or piece of text once and instance it anywhere in the file. This means it's important to choose a name that will not be encountered anywhere in your actualy dialogue, it's a good idea to use symbols to differentiate them for regular dictionary words.
+
+    The following captions are for the same character and thus use the same color:
+    
+        ...
+        "scenes.johnson_scared_01" "<clr:29,72,191>Did you hear that? It sounds like…"
+        "scenes.johnson_scared_02" "<clr:29,72,191>There it is again. What is that?"
+        "scenes.johnson_scared_03" "<clr:29,72,191>I'm getting out of here!"
+        ...
+    
+    If you decide later on to use a different color for this character then changing three lines is trivial enough, but you may have dozens of lines for your character, and while find/replace exists, pre-processors simplify this process by allowing you to define the color at the top of the file:
+
+        # $Color-Johnson clr:29,72,191
+        ...
+        "scenes.johnson_scared_01" "<$Color-Johnson>Did you hear that? It sounds like…"
+        "scenes.johnson_scared_02" "<$Color-Johnson>There it is again. What is that?"
+        "scenes.johnson_scared_03" "<$Color-Johnson>I'm getting out of here!"
+        ...
+
+    When the file is compiled the output is exactly the same as the one before, but now you can quickly iterate on color changes.
+
+    Another neat little example is combining often used tags into a new one to save you some key strokes. Here we use italics and bold a lot:
+
+        ...
+        "combined.tag.example" "<I><B>Every<I><B> second <I><B>word<I><B> is <I><B>italics<I><B> and <I><B>bold<I><B>."
+        ...
+    
+    So we use a pre-processor to make things look a little neater and simpler:
+
+        # <IB> <I><B>
+        ...
+        "combined.tag.example" "<IB>Every<IB> second <IB>word<IB> is <IB>bold<IB> and <IB>italics<IB>."
+        ...
+    
+    Remember that the key/value pre-processor isn't just for tags and will replace anything. This last example shows how to release your captions for non USA players:
+
+        # color colour
+        # center centre
+        # dialog dialogue

@@ -17,14 +17,16 @@ namespace HLACaptionCompiler.Parser
 
         // Custom properties
         public bool AllowPreProcessors { get; set; } = true;
+        private const char PreProcessorChar = '#';
         public bool AllowHashRegions { get; set; } = true;
         public bool IsStrict { get; set; } = true;
 
 
-        public ClosedCaptionFileParser(string source):base(source)
+        public ClosedCaptionFileParser(string source, bool strict = false):base(source)
         {
+            IsStrict = strict;
         }
-        public ClosedCaptionFileParser(FileInfo file) : this(File.ReadAllText(file.FullName))
+        public ClosedCaptionFileParser(FileInfo file, bool strict = false) : this(File.ReadAllText(file.FullName), strict)
         {
         }
 
@@ -58,13 +60,12 @@ namespace HLACaptionCompiler.Parser
             if (AllowPreProcessors)
             {
                 //var preprocessorValues = new Dictionary<string, string>();
-                while (IsNextNoSkip("//#"))
+                while (CurrentChar == PreProcessorChar)
                 {
-                    Advance(3);
+                    Advance();
                     var name = NextWord("pre-processor name", " \t", "\r\n");
                     var value = NextWord("pre-process value");
-                    while (CurrentChar == '\r' || CurrentChar == '\n')
-                        SkipLine();
+                    SkipGarbage();
                     switch (name)
                     {
 

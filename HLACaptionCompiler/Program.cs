@@ -11,9 +11,10 @@ namespace HLACaptionCompiler
 {
     class Program
     {
-        private static CompilerSettings Settings { get; set; } = new CompilerSettings();
+        private static CompilerSettings Settings { get; set; } = new();
         private static bool WriteSettingsFile { get; set; } = false;
-        private static IList<FileInfo> Files { get; set; } = new List<FileInfo>();
+        private static List<FileInfo> CaptionSourceFiles { get; set; } = new();
+        private static List<string> AddonDirectories { get; set; } = new();
         public const string CaptionSourceFileFormat = "closecaption_{0}{1}.txt";
         public const string CaptionCompiledFileFormat = "closecaption_{0}.dat";
         public const string CaptionSourceFilePattern = "closecaption_*.txt";
@@ -35,18 +36,26 @@ namespace HLACaptionCompiler
                 ReadSettings();
             }
             
-            if (Files.Count == 0)
+            if (CaptionSourceFiles.Count == 0 && AddonDirectories.Count == 0)
             {
-                WriteLineVerbose("[Mode] Compiling from current addon folder or chosen addon.");
+                WriteLineVerbose("Compiling from current addon folder or chosen addon.\n");
                 CompileWorkingOrChosenDirectory();
+                return;
             }
-            else
+            
+            foreach (var file in CaptionSourceFiles)
             {
-                WriteLineVerbose("[Mode] Compiling files given to command line.");
-                foreach (var file in Files)
+                if (file.Directory == null)
                 {
-                    CompileFile(file, WorkingDirectory);
+                    WriteLineVerbose($"{file.FullName} had a null directory.");
+                    continue;
                 }
+                CompileFile(file, file.Directory);
+            }
+
+            foreach (var addon in AddonDirectories)
+            {
+                CompileAddonCaptions(addon);
             }
 
             if (Settings.PauseOnCompletion)
@@ -74,21 +83,19 @@ namespace HLACaptionCompiler
                 WriteLineVerbose($"Compiling captions for addon \"{addon}\".");
             }
 
-            var contentPath = Steam.SteamData.GetHLAAddOnFolder(addon);
-            var gamePath = Steam.SteamData.GetAddOnGameFolder(addon);
-            var contentCaptionDirectory = new DirectoryInfo(Path.Combine(contentPath, Steam.SteamData.CaptionFolder));
-            var gameCaptionDirectory = new DirectoryInfo(Path.Combine(gamePath, Steam.SteamData.CaptionFolder));
-            var (filesCompiled, filesTotal) = CompileFolder(contentCaptionDirectory, gameCaptionDirectory);
-            //if (filesCompiled > 0)
-                Console.WriteLine($"\n{filesCompiled}/{filesTotal} files compiled to \"{gameCaptionDirectory.FullName}\"");
-            //else
-            //    Console.WriteLine($"Failed to write captions.");
+            CompileAddonCaptions(addon);
         }
 
         private static void ParseArgs(string[] args)
         {
+            //TODO: -a --addon followed by addon folder
             foreach (var arg in args)
             {
+                if (arg.ToLower() == "help")
+                {
+                    PrintHelp();
+                    continue;
+                }
                 // Fully qualified options
                 if (arg.StartsWith("--"))
                 {
@@ -114,7 +121,7 @@ namespace HLACaptionCompiler
                 {
                     try
                     {
-                        Files.Add(new FileInfo(arg));
+                        CaptionSourceFiles.Add(new FileInfo(arg));
                     }
                     catch (ArgumentException)
                     {
@@ -130,27 +137,41 @@ namespace HLACaptionCompiler
                     }
                     continue;
                 }
+                // Presumed addons
+                if (Directory.Exists(arg))
+                {
+                    if (IsAddonFolder(arg))
+                    {
+                        var addon = new DirectoryInfo(arg).Name;
+                        AddonDirectories.Add(addon);
+                    }
+                }
 
                 Console.WriteLine($"Unknown file or option: {arg}");
             }
         }
         public static void SetOption(string option)
         {
-            switch (option.ToLower())
+            switch (option)
             {
+                case "help":
+                    PrintHelp();
+                    break;
                 case "pause":
                 case "p":
                     Settings.PauseOnCompletion = true;
                     break;
-
                 case "verbose":
                 case "v":
                     Settings.Verbose = true;
                     break;
-
                 case "settings":
-                case "s":
+                case "S":
                     WriteSettingsFile = true;
+                    break;
+                case "strict":
+                case "s":
+                    Settings.Strict = true;
                     break;
 
                 default:
@@ -190,10 +211,16 @@ namespace HLACaptionCompiler
             return addons[selection-1];
             
         }
+        /// <summary>
+        /// Compiles a single file to a given directory.
+        /// </summary>
+        /// <param name="file">The caption source file to compile.</param>
+        /// <param name="dir">The directory to write the compiled file.</param>
+        /// <returns>True if the file compiles successfully or false otherwise.</returns>
         public static bool CompileFile(FileInfo file, DirectoryInfo dir)
         {
             WriteVerbose($"Compiling {file.Name} ... ");
-            var parser = new ClosedCaptionFileParser(file);
+            var parser = new ClosedCaptionFileParser(file, Settings.Strict);
             if (parser.TryParse(out var parsed))
             {
                 var captions = new ClosedCaptions();
@@ -215,7 +242,7 @@ namespace HLACaptionCompiler
             foreach (var file in files)
             {
                 WriteVerbose($"Examining {file.Name} ... ");
-                var parser = new ClosedCaptionFileParser(file);
+                var parser = new ClosedCaptionFileParser(file, Settings.Strict);
                 if (parser.TryParse(out var parsed))
                 {
                     foreach (KeyValuePair<string, string> token in parsed["Tokens"])
@@ -280,6 +307,19 @@ namespace HLACaptionCompiler
             }*/
             return (filesCompiled,files.Length);
         }
+        public static void CompileAddonCaptions(string addon)
+        {
+            WriteLineVerbose($"Compiling captions for addon \"{addon}\"");
+            var contentPath = Steam.SteamData.GetHLAAddOnFolder(addon);
+            var gamePath = Steam.SteamData.GetAddOnGameFolder(addon);
+            var contentCaptionDirectory = new DirectoryInfo(Path.Combine(contentPath, Steam.SteamData.CaptionFolder));
+            var gameCaptionDirectory = new DirectoryInfo(Path.Combine(gamePath, Steam.SteamData.CaptionFolder));
+            var (filesCompiled, filesTotal) = CompileFolder(contentCaptionDirectory, gameCaptionDirectory);
+            //if (filesCompiled > 0)
+            Console.WriteLine($"\n{filesCompiled}/{filesTotal} files compiled to \"{gameCaptionDirectory.FullName}\"");
+            //else
+            //    Console.WriteLine($"Failed to write captions.");
+        }
         public static void WriteSettings()
         {
             try
@@ -316,9 +356,7 @@ namespace HLACaptionCompiler
         }
         public static string GetParentAddonName(string folderPath)
         {
-            var addonFolder = Steam.SteamData.GetHLAMainAddOnFolder();
-            if (!folderPath.Contains(addonFolder) || addonFolder == folderPath)
-                return "";
+            if (!IsAddonFolder(folderPath)) return "";
             
             var folders = folderPath.Split(Path.DirectorySeparatorChar);
             for (int i = folders.Length - 1; i >= 0; i--)
@@ -332,6 +370,14 @@ namespace HLACaptionCompiler
             return "";
             
         }
+        public static bool IsAddonFolder(string folderPath)
+        {
+            var addonFolder = Steam.SteamData.GetHLAMainAddOnFolder();
+            if (!folderPath.Contains(addonFolder) || addonFolder == folderPath)
+                return false;
+
+            return true;
+        }
         private static void WriteLineVerbose(string message)
         {
             if (Settings.Verbose) Console.WriteLine(message);
@@ -343,12 +389,13 @@ namespace HLACaptionCompiler
 
         public static void PrintHelp()
         {
-            var help = "Command line arguments must contain an input file and a caption file.\n" +
-                ".txt is recognized as an input file (either a custom language file or modifier file).\n" +
-                ".dat is recognized as a compiled caption file (e.g. closecaption_english.dat).\n" +
+            var help = "https://github.com/FrostSource/HLACaptionReplacer for detailed help.\n" +
                 "\n" +
                 "Flags:\n" +
-                "-p     Wait for input after finishing\n";
+                "-S/--settings\t\tCreate a settings file in the current directory.\n" +
+                "-v/--verbose\t\tVerbose console messages.\n" +
+                "-p/--pause\t\tWait for input after finishing.\n" +
+                "-s/--strict\t\tCompile with strict syntax checking.\n";
             Console.WriteLine(help);
         }
 
@@ -356,6 +403,7 @@ namespace HLACaptionCompiler
         {
             public bool PauseOnCompletion { get; set; } = false;
             public bool Verbose { get; set; } = false;
+            public bool Strict { get; set; } = false;
         }
     }
 
