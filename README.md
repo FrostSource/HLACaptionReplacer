@@ -32,6 +32,10 @@ Any non-valid setting will be considered as a source file and checked for validi
 
 Short hand options are case-sensitive.
 
+- -h / --help
+
+    Displays these options and a link to this github.
+
 - -S / --settings
     
     Generates a `settings.json` file or overwrites the existing one, allowing the user to modify settings without using the command line. The program will read from this file when launching.

@@ -155,6 +155,7 @@ namespace HLACaptionCompiler
             switch (option)
             {
                 case "help":
+                case "h":
                     PrintHelp();
                     break;
                 case "pause":
