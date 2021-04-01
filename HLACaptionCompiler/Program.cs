@@ -102,7 +102,7 @@ namespace HLACaptionCompiler
                     var option = arg[2..];
                     if (option != string.Empty)
                     {
-                        SetOption(option);
+                        SetOption(option.ToLower());
                     }
                     continue;
                 }
