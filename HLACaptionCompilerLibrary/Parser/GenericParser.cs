@@ -483,6 +483,21 @@ namespace HLACaptionCompiler.Parser
             return sb.ToString();
         }
         /// <summary>
+        /// Gets all characters left on the current line.
+        /// </summary>
+        /// <returns></returns>
+        public string RestOfLine()
+        {
+            var sb = new StringBuilder();
+            while (!EOF && CurrentChar != '\n' && CurrentChar != '\r')
+            {
+                sb.Append(CurrentChar);
+                Advance();
+            }
+            SkipLine();
+            return sb.ToString();
+        }
+        /// <summary>
         /// 
         /// </summary>
         /// <param name="regex"></param>

@@ -64,7 +64,8 @@ namespace HLACaptionCompiler.Parser
                 {
                     Advance();
                     var name = NextWord("pre-processor name", " \t", "\r\n");
-                    var value = NextWord("pre-process value");
+                    //var value = NextWord("pre-process value");
+                    var value = RestOfLine();
                     SkipGarbage();
                     switch (name)
                     {
