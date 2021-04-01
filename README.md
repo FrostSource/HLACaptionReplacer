@@ -30,7 +30,9 @@ If executing the program from the command line you can specify some arguments to
 
 Any non-valid setting will be considered as a source file and checked for validity. If the path is a single source file it will be compiled to its original location, if the path is an addon folder, all source files in the addon will be compiled. You may pass as many files and addons as command line arguments as you wish.
 
-- -s / --settings
+Short hand options are case-sensitive.
+
+- -S / --settings
     
     Generates a `settings.json` file or overwrites the existing one, allowing the user to modify settings without using the command line. The program will read from this file when launching.
 
@@ -41,6 +43,10 @@ Any non-valid setting will be considered as a source file and checked for validi
 - -v / --verbose
   
     The program will output more messages to the console as it completes each action or finds a problem.
+
+- -s / -strict
+
+    Compile with strict syntax checking. Requires all keys and values to be enclosed with double quotes and will fail on duplicate tokens.
 
 # Pre-Processors
 
