@@ -174,6 +174,10 @@ namespace HLACaptionCompiler
                 case "s":
                     Settings.Strict = true;
                     break;
+                case "nodirective":
+                case "D":
+                    Settings.AllowDirectives = false;
+                    break;
 
                 default:
                     Console.WriteLine($"Unknown option '{option}'");
@@ -396,7 +400,8 @@ namespace HLACaptionCompiler
                 "-S/--settings\t\tCreate a settings file in the current directory.\n" +
                 "-v/--verbose\t\tVerbose console messages.\n" +
                 "-p/--pause\t\tWait for input after finishing.\n" +
-                "-s/--strict\t\tCompile with strict syntax checking.\n";
+                "-s/--strict\t\tCompile with strict syntax checking.\n" +
+                "-D/--nodirective\t\tDisables use of compiler directives.";
             Console.WriteLine(help);
         }
 
@@ -405,6 +410,7 @@ namespace HLACaptionCompiler
             public bool PauseOnCompletion { get; set; } = false;
             public bool Verbose { get; set; } = false;
             public bool Strict { get; set; } = false;
+            public bool AllowDirectives { get; set; } = true;
         }
     }
 

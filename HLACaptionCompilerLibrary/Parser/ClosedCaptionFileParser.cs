@@ -16,8 +16,8 @@ namespace HLACaptionCompiler.Parser
         public override string InvalidChars { get; protected set; } = "\n";
 
         // Custom properties
-        public bool AllowPreProcessors { get; set; } = true;
-        private const char PreProcessorChar = '#';
+        public bool AllowDirectives { get; set; } = true;
+        private const char DirectiveChar = '#';
         public bool AllowHashRegions { get; set; } = true;
         public bool IsStrict { get; set; } = true;
 
@@ -57,30 +57,30 @@ namespace HLACaptionCompiler.Parser
             var parsed = new Dictionary<string, dynamic>();
             var tokens = new Dictionary<string, string>();
 
-            if (AllowPreProcessors)
+            if (AllowDirectives)
             {
                 //var preprocessorValues = new Dictionary<string, string>();
-                while (CurrentChar == PreProcessorChar)
+                while (CurrentChar == DirectiveChar)
                 {
                     Advance();
-                    var name = NextWord("pre-processor name", " \t", "\r\n");
-                    //var value = NextWord("pre-process value");
-                    var value = RestOfLine();
-                    SkipGarbage();
-                    switch (name)
+                    var directiveType = NextWord("directive type", " \t", "\r\n");
+                    switch (directiveType)
                     {
 
                         // Named values
-                        default:
+                        case "define":
+                            var macroName = NextWord("macro name", " \t", "\r\n");
+                            SkipWhiteSpace();
+                            var macroValue = RestOfLine();
+                            SkipLine();
                             var line = LineNumber;
-                            SetSource(Source[Index..].Replace(name, value));
-                            //SkipLine();
-                            // Advance the line number artificially 
+                            SetSource(Source[Index..].Replace(macroName, macroValue));
+                            // Advance the line number artificially.
                             LineNumber = line;
-                            //var index = Index - 1;
-                            //SetSource(Source.Replace(name, value));
-                            //Advance(index);
-                            //preprocessorValues.Add(name, value);
+                            break;
+
+                        default:
+                            SyntaxError($"Unknown directive \"{directiveType}\"");
                             break;
                     }
                 }

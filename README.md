@@ -87,21 +87,23 @@ Short hand options are case-sensitive.
 
     Compile with strict syntax checking. Requires all keys and values to be enclosed with double quotes and will fail on duplicate tokens.
 
-# Pre-Processors
+# Directives/Pre-Processors
 
-Pre-processors are special commands at the top of the file that perform actions on the input text (caption source) before it is examined and compiled. Pre-processors are fairly strict in their formatting and can only exist at the top of the file before `"lang"` is encountered. They have the following format:
+Directives are special commands that perform actions on the input text (caption source) (usually before it is examined and compiled). Directives are fairly strict in their formatting and some can only exist at the top of the file before `"lang"` is encountered. They have the following format:
     
-    # pre-processor-name pre-processor-value
+    #directive-name value1 value2 ...
 
-The `name` and `value` must be on the same line and the `name` may not contain whitespace. Quotes cannot be used to avoid this limitation as quotes are valid characters for the `name` and `value`. The `value` is the *first non-whitespace* character after the name *until the end of the line*, and may be optional for some pre-processors. If you want the compiler to temporarily ignore a pre-processor you can simply comment it out:
+All text for a single directive must exist on one line. Values after the directive name may be optional. If you want the compiler to temporarily ignore a directive you can simply comment it out:
 
-    //# pre-processor-name pre-processor-value
+    //#directive-name value1 value2 ...
 
-## List of pre-processors
+## List of directives
 
-- **Key/Value**
+- **#define name value**
   
-    Every instance of the `key` in the source file will be replace with its assigned `value`, allowing you to define a color or piece of text once and instance it anywhere in the file. This means it's important to choose a name that will not be encountered anywhere in your actualy dialogue, it's a good idea to use symbols to differentiate them for regular dictionary words.
+    Every instance of `name` in the source file will be replaced with its assigned `value`, allowing you to define a color or piece of text once and instance it anywhere in the file. This means it's important to choose a name that will not be encountered anywhere in your actualy dialogue, it's a good idea to use symbols to differentiate them for regular dictionary words.
+
+    `name` may not contain any whitespace. `value` is the *first non-whitespace* character after `name` *until the end of the line*. Quotes cannot be used to avoid this limitation as quotes are valid characters for the `name` and `value`.
 
     The following captions are for the same character and thus use the same color:
     
@@ -111,7 +113,7 @@ The `name` and `value` must be on the same line and the `name` may not contain w
         "scenes.johnson_scared_03" "<clr:29,72,191>I'm getting out of here!"
         ...
     
-    If you decide later on to use a different color for this character then changing three lines is trivial enough, but you may have dozens of lines for your character, and while find/replace exists, pre-processors simplify this process by allowing you to define the color at the top of the file:
+    If you decide later on to use a different color for this character then changing three lines is trivial enough, but you may have dozens of lines for your character, and while find/replace exists, the `define` directive simplifies this process by allowing you to define the color at the top of the file:
 
         # $Color-Johnson clr:29,72,191
         ...
@@ -128,14 +130,14 @@ The `name` and `value` must be on the same line and the `name` may not contain w
         "combined.tag.example" "<I><B>Every<I><B> second <I><B>word<I><B> is <I><B>italics<I><B> and <I><B>bold<I><B>."
         ...
     
-    So we use a pre-processor to make things look a little neater and simpler:
+    So we define a new value to make things look a little neater and simpler:
 
         # <IB> <I><B>
         ...
         "combined.tag.example" "<IB>Every<IB> second <IB>word<IB> is <IB>bold<IB> and <IB>italics<IB>."
         ...
     
-    Remember that the key/value pre-processor isn't just for tags and will replace anything. This last example shows how to release your captions for non USA players:
+    Remember that the `define` directive isn't just for tags and will replace anything. This last example shows how to release your captions for non USA players:
 
         # color colour
         # center centre
