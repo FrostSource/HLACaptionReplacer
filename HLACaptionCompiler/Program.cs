@@ -282,8 +282,8 @@ namespace HLACaptionCompiler
             foreach (var file in files)
             {
                 var name = Path.GetFileNameWithoutExtension(file.FullName)[13..];
-                var _ = name.IndexOf('_');
-                var language = name[..(_ == -1 ? name.Length : _)];
+                var catagorySeparator = name.IndexOf('-');
+                var language = name[..(catagorySeparator == -1 ? name.Length : catagorySeparator)];
                 // Create list for language if it's new
                 if (!languageFiles.ContainsKey(language))
                     languageFiles.Add(language, new List<FileInfo>());
