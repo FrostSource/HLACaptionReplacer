@@ -4,6 +4,41 @@ The program allows you to quickly compile multiple caption source files into the
 
 # Using the program
 
+## Where do my files go?
+
+Closed caption source files (e.g. `closecaption_english.txt`) go into the `\resource\subtitles\` folder in the root directory of your addon. It is not created by default so you will need to create the two folders yourself.
+
+Caption source file names **must** start with `closecaption_` followed by the name of your language, and may optionally be followed by a hyphen and any catagory name (see [Catagories](#catagories)). The file must use the extension `.txt` and be plain text (see [Writing caption files](Writing%20caption%20files.md) for more information). Sub-directories are allowed to further organize your files, all sub-directories will be searched for valid files. The files will be compiled into a mirrored `\resource\subtitles\` folder in the `\game\` path of your addon with the extension `.dat`.
+
+There are two ways to load captions for your addon:
+
+1. Allow Source to load your captions and add them onto the existing captions. This has the benefit of keeping all the base game SFX captions and Alyx ammo mentions. Nothing needs to be done for this besides compiling your captions. If you want to keep most base game captions but remove some see [Removing base game captions](Writing%20caption%20files.md#Removing_base_game_captions).
+2. Override the base game captions using a script and the console command `cc_lang`. This will cause base game captions to not be displayed, only captions from your custom files will appear. This requires using unique language names like `closecaption_english_custom.dat`. The scripts for this are supplied for you to use and require minimal editing.
+
+## Catagories
+
+Catagories allow you to split your language files up to be more manageable while still being compiled into one language file. You simply follow the language name in the file name with a hyphen (`-`) and then any valid file name characters to represent your catagory. The name of the catagory isn't important to the compiler and is just for you.
+
+Here is an example file structure for two languages:
+
+    resource\
+        subtitles\
+            english\
+                closecaption_english-johnson_choreo.txt
+                closecaption_english-act2.txt
+                closecaption_english-sfx.txt
+            french\
+                closecaption_french-johnson_choreo.txt
+                closecaption_french-act2.txt
+                closecaption_french-sfx.txt
+
+The `english` and `french` folders are purely for organization and don't affect the compiler. The above files will be compiled into the `\game\` folder of your addon as the follow:
+
+    resource\
+        subtitles\
+            closecaption_english.dat
+            closecaption_french.dat
+
 ## Running the exe
 
 `HLACaptionCompiler.exe` will run a little differently depending on the context:
