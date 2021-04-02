@@ -6,18 +6,18 @@ using System.Threading.Tasks;
 
 namespace HLACaptionCompiler.Parser
 {
-    class ParserSyntaxException : ParserException
+    class TokenizerSyntaxException : TokenizerException
     {
-        public ParserSyntaxException()
+        public TokenizerSyntaxException()
         {
         }
 
-        public ParserSyntaxException(string message, int line, int position)
+        public TokenizerSyntaxException(string message, int line, int position)
             : base(SyntaxErrorMessage(message, line, position))
         {
         }
 
-        public ParserSyntaxException(string message, int line, int position, Exception inner)
+        public TokenizerSyntaxException(string message, int line, int position, Exception inner)
             : base(SyntaxErrorMessage(message, line, position), inner)
         {
         }

@@ -6,18 +6,18 @@ using System.Threading.Tasks;
 
 namespace HLACaptionCompiler.Parser
 {
-    class ParserEOFException : ParserException
+    class TokenizerEOFException : TokenizerException
     {
-        public ParserEOFException()
+        public TokenizerEOFException()
         {
         }
 
-        public ParserEOFException(string message)
+        public TokenizerEOFException(string message)
             : base("Unexpected end of file. " + message)
         {
         }
 
-        public ParserEOFException(string message, Exception inner)
+        public TokenizerEOFException(string message, Exception inner)
             : base(message, inner)
         {
         }

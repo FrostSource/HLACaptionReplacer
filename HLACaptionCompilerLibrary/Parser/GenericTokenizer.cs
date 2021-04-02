@@ -9,10 +9,10 @@ namespace HLACaptionCompiler.Parser
 {
     //TODO: Should extract relevant members into separate GenericLanguageParser class?
     //TODO: Allow characters to stop enclosed, like \n
-    public class GenericParser
+    public class GenericTokenizer
     {
         /// <summary>
-        /// Gets or sets if white space should be skipped by the parser when finding elements such as numbers or words.
+        /// Gets or sets if white space should be skipped by the tokenizer when finding elements such as numbers or words.
         /// </summary>
         public bool AutoSkipGarbage { get; protected set; } = true;
         /// <summary>
@@ -77,10 +77,10 @@ namespace HLACaptionCompiler.Parser
         public static string DigitChars { get; protected set; } = "1234567890";
         public static string HexChars { get; protected set; } = DigitChars + "abcdefABCDEF";
 
-        public GenericParser()
+        public GenericTokenizer()
         {
         }
-        public GenericParser(string source)
+        public GenericTokenizer(string source)
         {
             //if (!source.EndsWith('\n'))
             //    source += '\n';
@@ -100,10 +100,10 @@ namespace HLACaptionCompiler.Parser
         /// <summary>
         /// Advances the next character in the source text.
         /// </summary>
-        /// <exception cref="ParserEOFException">Thrown when the end of the source is found instead of a character.</exception>
+        /// <exception cref="TokenizerEOFException">Thrown when the end of the source is found instead of a character.</exception>
         public void Advance()
         {
-            if (EOF) throw new ParserEOFException();
+            if (EOF) throw new TokenizerEOFException();
             PreviousLineNumber = LineNumber;
             PreviousLinePosition = LinePosition;
             if (Source[Index] == '\n')
@@ -121,7 +121,7 @@ namespace HLACaptionCompiler.Parser
         /// Advances the given number of characters in the source text.
         /// </summary>
         /// <param name="count"></param>
-        /// <exception cref="ParserEOFException">Thrown when the end of the source is found instead of a character.</exception>
+        /// <exception cref="TokenizerEOFException">Thrown when the end of the source is found instead of a character.</exception>
         public void Advance(int count)
         {
             for (int i = 0; i < count; i++)
@@ -135,7 +135,7 @@ namespace HLACaptionCompiler.Parser
         /// <returns>
         /// The next <see cref="char"/> or \0 if at the end.
         /// </returns>
-        /// <exception cref="ParserEOFException">Thrown when the end of the source is found instead of a character.</exception>
+        /// <exception cref="TokenizerEOFException">Thrown when the end of the source is found instead of a character.</exception>
         public char Next()
         {
             if (AutoSkipGarbage) SkipGarbage();
@@ -205,13 +205,13 @@ namespace HLACaptionCompiler.Parser
         /// Eats the given <see cref="string"/> at the front of the source text.
         /// </summary>
         /// <param name="str"></param>
-        /// <exception cref="ParserEOFException">Thrown when the parser unexpectedly reaches the end of the source.</exception>
-        /// <exception cref="ParserSyntaxException">Thrown when <paramref name="str"/> is not next in the source.</exception>
+        /// <exception cref="TokenizerEOFException">Thrown when the tokenizer unexpectedly reaches the end of the source.</exception>
+        /// <exception cref="TokenizerSyntaxException">Thrown when <paramref name="str"/> is not next in the source.</exception>
         public void Eat(string str)
         {
             if (str.Length > Source.Length - Index)
             {
-                throw new ParserEOFException();
+                throw new TokenizerEOFException();
             }
             if (!IsNext(str))
             {
@@ -266,8 +266,8 @@ namespace HLACaptionCompiler.Parser
         /// </summary>
         /// <param name="boundaryChar">The <see cref="char"/> that defines the boundary.</param>
         /// <returns></returns>
-        /// <exception cref="ParserEOFException">Thrown when the end of the source is found instead of a character.</exception>
-        /// <exception cref="ParserSyntaxException">Thrown when <paramref name="boundaryChar"/> is not at the beginning or end.</exception>
+        /// <exception cref="TokenizerEOFException">Thrown when the end of the source is found instead of a character.</exception>
+        /// <exception cref="TokenizerSyntaxException">Thrown when <paramref name="boundaryChar"/> is not at the beginning or end.</exception>
         public virtual string NextEnclosed(char boundaryChar = '"', string invalidChars = null)
         {
             invalidChars ??= InvalidChars;
@@ -385,7 +385,7 @@ namespace HLACaptionCompiler.Parser
         /// <example>
         /// <code>
         /// // Getting a variable name that can't start with numbers but can contain them.
-        /// var name = parser.NextSequence("_abc","_abc123");
+        /// var name = tokenizer.NextSequence("_abc","_abc123");
         /// </code>
         /// </example>
         public virtual string NextSequence(string validStartChars, string validChars)
@@ -628,7 +628,7 @@ namespace HLACaptionCompiler.Parser
         }
         public void SyntaxError(string message, int lineNumber, int linePosition)
         {
-            throw new ParserSyntaxException(message, lineNumber, linePosition);
+            throw new TokenizerSyntaxException(message, lineNumber, linePosition);
         }
         public void SyntaxError(string message)
         {
