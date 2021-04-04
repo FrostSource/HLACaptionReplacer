@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
-    <AssemblyName>HLACaptionReplacerLibrary</AssemblyName>
-    <RootNamespace>HLACaptionReplacer</RootNamespace>
+    <AssemblyName>HLACaptionCompilerLibrary</AssemblyName>
+    <RootNamespace>HLACaptionCompiler</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

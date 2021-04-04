@@ -225,11 +225,11 @@ namespace HLACaptionCompiler
         public static bool CompileFile(FileInfo file, DirectoryInfo dir)
         {
             WriteVerbose($"Compiling {file.Name} ... ");
-            var parser = new ClosedCaptionFileParser(file, Settings.Strict);
-            if (parser.TryParse(out var parsed))
+            var parser = new ClosedCaptionsFileParser(file, Settings.Strict);
+            if (parser.TryParse())
             {
                 var captions = new ClosedCaptions();
-                foreach (KeyValuePair<string,string> token in parsed["Tokens"])
+                foreach (KeyValuePair<string,string> token in parser.CaptionTokens)
                 {
                     captions.Add(token.Key, token.Value);
                 }
@@ -247,10 +247,10 @@ namespace HLACaptionCompiler
             foreach (var file in files)
             {
                 WriteVerbose($"Examining {file.Name} ... ");
-                var parser = new ClosedCaptionFileParser(file, Settings.Strict);
-                if (parser.TryParse(out var parsed))
+                var parser = new ClosedCaptionsFileParser(file, Settings.Strict);
+                if (parser.TryParse())
                 {
-                    foreach (KeyValuePair<string, string> token in parsed["Tokens"])
+                    foreach (KeyValuePair<string, string> token in parser.CaptionTokens)
                     {
                         if (!captions.HasCaption(token.Key))
                            captions.Add(token.Key, token.Value);

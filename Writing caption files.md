@@ -15,7 +15,7 @@ Below is the simplest possible caption file with only one sound defined:
         }
     }
 
-The formatting and spelling are very important for the compiler to read your files. If something is not recognized the compiler will print a syntax error message to help you debug the issue. Something **important** to note is that captions do not seem to recognize capitalized sound event names `Addon.MySound` will not work. If you have existing sound events with upper-case characters that need captions you will have to change them to use lower-case.
+The formatting and spelling are very important for the compiler to read your files. If something is not recognized the compiler will print a syntax error message to help you debug the issue. Something **important** to note is that captions do not seem to recognize capitalized sound event names `Addon.MySound` will not work, you will have to refer to it in lower-case form.
 
 
 By default captions will display 

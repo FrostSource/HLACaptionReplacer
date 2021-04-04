@@ -11,6 +11,9 @@ namespace HLACaptionCompiler.Parser
     //TODO: Allow characters to stop enclosed, like \n
     public class GenericTokenizer
     {
+        public static string AlphaChars { get; protected set; } = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        public static string DigitChars { get; protected set; } = "1234567890";
+        public static string HexChars { get; protected set; } = DigitChars + "abcdefABCDEF";
         /// <summary>
         /// Gets or sets if white space should be skipped by the tokenizer when finding elements such as numbers or words.
         /// </summary>
@@ -19,29 +22,38 @@ namespace HLACaptionCompiler.Parser
         /// Gets or sets the chars that define the default boundary between sequences such as words and numbers.
         /// A sequence will stop when it encounters one of the following: White space, boundary char, EOF.
         /// </summary>
-        public virtual string BoundaryChars { get; protected set; } = ",.{}[]/-=+()!'\"";
-        public virtual string WhiteSpaceChars { get; protected set; } = " \t\r\f\n";
+        public virtual string BoundaryChars { get; set; } = "-=+*/{}()[]!;,./%*";
+        public virtual string WhiteSpaceCharacters { get; set; } = " \t\r\f\n";
         /// <summary>
         /// Gets or sets the string that indicates the start of a line comment.
         /// </summary>
-        public virtual string CommentLineStart { get; protected set; } = "//";
-        public virtual string CommentBlockStart { get; protected set; } = "/*";
-        public virtual string CommentBlockEnd { get; protected set; } = "*/";
+        public virtual string CommentLineStart { get; set; } = "//";
+        public virtual string CommentBlockStart { get; set; } = "/*";
+        public virtual string CommentBlockEnd { get; set; } = "*/";
+        public virtual string[] Symbols { get; set; } = { "-=", "+=", "*=", "/=", "-", "+", "{", "}", "(", ")", "[", "]", "=", "!", ";", ",", ".", "/", "%", "*" };
+        public virtual string StringBoundaryCharacters { get; set; } = "\"";
+        public virtual string IdentifierStartCharacters { get; set; } = "_" + AlphaChars;
+        public virtual string IdentifierCharacters { get; set; } = "_" + AlphaChars + DigitChars;
+        /// <summary>
+        /// Maps a <see cref="string"/> to custom <see cref="Action"/> functions allowing the tokenizer to defer to it when the <see cref="string"/> is encountered. 
+        /// </summary>
+        public virtual Dictionary<string, Action<GenericTokenizer>> CustomHandlers { get; set; } = new();
+        public virtual List<GenericToken> Tokens { get; private set; } = new();
+        public GenericToken LastToken { get; private set; }
 
-        public virtual bool AllowCharacterEscaping { get; protected set; } = true;
-        public virtual bool AutomaticallyConvertEscapedCharacters { get; protected set; } = true;
-        public virtual char EscapeCharacter { get; protected set; } = '\\';
-        //public virtual string[] EscapableStrings { get; set; } = { "'", "\"", "\\", "n", "r", "t", "b", "f", "v", "0" };
+        public virtual bool AllowCharacterEscaping { get; set; } = true;
+        public virtual bool AutomaticallyConvertEscapedCharacters { get; set; } = true;
+        public virtual char EscapeCharacter { get; set; } = '\\';
         /// <summary>
         /// Gets or sets the string of chars that will throw a syntax exception if encountered.
         /// Will not throw exception if encountered during garbage skipping.
         /// </summary>
-        public virtual string InvalidChars { get; protected set; } = "";
+        public virtual string InvalidChars { get; set; } = "";
         /// <summary>
         /// Gets or sets the string of chars that will throw a syntax exception if NOT encountered.
         /// Set as empty string to ignore.
         /// </summary>
-        public virtual string ValidChars { get; protected set; } = "";
+        public virtual string ValidChars { get; set; } = "";
 
         public string Source { get; protected set; }
         public char CurrentChar
@@ -73,13 +85,6 @@ namespace HLACaptionCompiler.Parser
         public int SavedLinePosition { get; protected set; } = 1;
         public bool EOF { get => Index >= Source.Length; }
 
-        public static string AlphaChars { get; protected set; } = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        public static string DigitChars { get; protected set; } = "1234567890";
-        public static string HexChars { get; protected set; } = DigitChars + "abcdefABCDEF";
-
-        public GenericTokenizer()
-        {
-        }
         public GenericTokenizer(string source)
         {
             //if (!source.EndsWith('\n'))
@@ -565,9 +570,10 @@ namespace HLACaptionCompiler.Parser
             if (CurrentChar == '\n') Advance();
         }
 
-        public static bool IsWhiteSpace(char ch)
+        public bool IsWhiteSpace(char ch)
         {
-            return Char.IsWhiteSpace(ch);
+            //return Char.IsWhiteSpace(ch);
+            return WhiteSpaceCharacters.Contains(ch);
         }
         public string LinePositionFormatted()
         {
@@ -646,6 +652,60 @@ namespace HLACaptionCompiler.Parser
         public static bool IsDigit(char ch)
         {
             return (ch == '0' || ch == '1' || ch == '2' || ch == '3' || ch == '4' || ch == '5' || ch == '6' || ch == '7' || ch == '8' || ch == '9');
+        }
+
+        protected virtual void AddToken(TokenType tokenType, string value)
+        {
+            var token = new GenericToken(tokenType, value, Index, LineNumber, LinePosition);
+            Tokens.Add(token);
+            LastToken = token;
+        }
+
+        public virtual void TokenizeNext()
+        {
+            foreach (var handler in CustomHandlers)
+            {
+                if (IsNextNoSkip(handler.Key))
+                {
+                    handler.Value(this);
+                    return;
+                }
+            }
+
+            if (IdentifierStartCharacters.Contains(CurrentChar))
+            {
+                var value = NextWord("identifier", validChars: IdentifierCharacters);
+                AddToken(TokenType.Identifier, value);
+                return;
+            }
+
+            if (StringBoundaryCharacters.Contains(CurrentChar))
+            {
+                var value = NextEnclosed(CurrentChar);
+                AddToken(TokenType.String, value);
+                return;
+            }
+
+            foreach (string symbol in Symbols)
+            {
+                if (IsNext(symbol))
+                {
+                    Advance(symbol.Length);
+                    AddToken(TokenType.Symbol, symbol);
+                    return;
+                }
+            }
+        }
+
+        public virtual List<GenericToken> Tokenize()
+        {
+            while (!EOF)
+            {
+                if (AutoSkipGarbage) SkipGarbage();
+
+                TokenizeNext();
+            }
+            return Tokens;
         }
 
         //public abstract IDictionary<string, dynamic> Parse();

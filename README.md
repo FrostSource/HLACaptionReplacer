@@ -142,3 +142,5 @@ All text for a single directive must exist on one line. Values after the directi
         # color colour
         # center centre
         # dialog dialogue
+
+    TODO: Point out issues with order of define directives as previous ones can affect later ones e.g. $Vinny affects $Vinny's. Unless this only affects output tokens and not internal directive set?
