@@ -8,16 +8,21 @@ The program allows you to quickly compile multiple caption source files into the
 
 Closed caption source files (e.g. `closecaption_english.txt`) go into the `\resource\subtitles\` folder in the root directory of your addon. It is not created by default so you will need to create the two folders yourself.
 
-Caption source file names **must** start with `closecaption_` followed by the name of your language, and may optionally be followed by a hyphen and any catagory name (see [Catagories](#catagories)). The file must use the extension `.txt` and be plain text (see [Writing caption files](Writing%20caption%20files.md) for more information). Sub-directories are allowed to further organize your files, all sub-directories will be searched for valid files. The files will be compiled into a mirrored `\resource\subtitles\` folder in the `\game\` path of your addon with the extension `.dat`.
+- Caption source file names **must** start with `closecaption_`, they can then be followed by any naming convention you wish for your project.
+- The file must use the extension `.txt` and be plain text (see [Writing caption files](Writing%20caption%20files.md) for more information).
+- Sub-directories are allowed to further organize your files, all sub-directories will be searched for valid files.
+- The files will be compiled into a mirrored `\resource\subtitles\` folder in the `\game\` path of your addon with the extension `.dat`.
+
+## Loading captions in-game
 
 There are two ways to load captions for your addon:
 
 1. Allow Source to load your captions and add them onto the existing captions. This has the benefit of keeping all the base game SFX captions and Alyx ammo mentions. Nothing needs to be done for this besides compiling your captions. If you want to keep most base game captions but remove some see [Removing base game captions](Writing%20caption%20files.md#Removing_base_game_captions).
 2. Override the base game captions using a script and the console command `cc_lang`. This will cause base game captions to not be displayed, only captions from your custom files will appear. This requires using unique language names like `closecaption_english_custom.dat`. The scripts for this are supplied for you to use and require minimal editing.
 
-## Catagories
+## Managing multiple files
 
-Catagories allow you to split your language files up to be more manageable while still being compiled into one language file. You simply follow the language name in the file name with a hyphen (`-`) and then any valid file name characters to represent your catagory. The name of the catagory isn't important to the compiler and is just for you.
+HLACaptionCompiler can take multiple files with the same defined language and compile them into a single language file allowing you to split your caption files up to be more manageable. Although you can use any name after the initial `closecaption_` it is recommended to follow it by the language name and then the file's catagory, although this is entirely up to you.
 
 Here is an example file structure for two languages:
 
@@ -32,7 +37,7 @@ Here is an example file structure for two languages:
                 closecaption_french-act2.txt
                 closecaption_french-sfx.txt
 
-The `english` and `french` folders are purely for organization and don't affect the compiler. The above files will be compiled into the `\game\` folder of your addon as the follow:
+The `english` and `french` folders are purely for organization and don't affect the way the files are compiled. The above files will be compiled into the `\game\` folder of your addon as the following:
 
     resource\
         subtitles\
@@ -103,23 +108,23 @@ All text for a single directive must exist on one line. Values after the directi
   
     Every instance of `name` in the source file will be replaced with its assigned `value`, allowing you to define a color or piece of text once and instance it anywhere in the file. This means it's important to choose a name that will not be encountered anywhere in your actualy dialogue, it's a good idea to use symbols to differentiate them for regular dictionary words.
 
-    `name` may not contain any whitespace. `value` is the *first non-whitespace* character after `name` *until the end of the line*. Quotes cannot be used to avoid this limitation as quotes are valid characters for the `name` and `value`.
+    `name` and `value` may not contain any whitespace and quotes cannot be used to avoid this limitation as quotes are valid characters for the `name` and `value`.
 
     The following captions are for the same character and thus use the same color:
     
         ...
-        "scenes.johnson_scared_01" "<clr:29,72,191>Did you hear that? It sounds like…"
-        "scenes.johnson_scared_02" "<clr:29,72,191>There it is again. What is that?"
-        "scenes.johnson_scared_03" "<clr:29,72,191>I'm getting out of here!"
+        scenes.johnson_scared_01 "<clr:29,72,191>Did you hear that? It sounds like…"
+        scenes.johnson_scared_02 "<clr:29,72,191>There it is again. What is that?"
+        scenes.johnson_scared_03 "<clr:29,72,191>I'm getting out of here!"
         ...
     
     If you decide later on to use a different color for this character then changing three lines is trivial enough, but you may have dozens of lines for your character, and while find/replace exists, the `define` directive simplifies this process by allowing you to define the color at the top of the file:
 
         # $Color-Johnson clr:29,72,191
         ...
-        "scenes.johnson_scared_01" "<$Color-Johnson>Did you hear that? It sounds like…"
-        "scenes.johnson_scared_02" "<$Color-Johnson>There it is again. What is that?"
-        "scenes.johnson_scared_03" "<$Color-Johnson>I'm getting out of here!"
+        scenes.johnson_scared_01 "<$Color-Johnson>Did you hear that? It sounds like…"
+        scenes.johnson_scared_02 "<$Color-Johnson>There it is again. What is that?"
+        scenes.johnson_scared_03 "<$Color-Johnson>I'm getting out of here!"
         ...
 
     When the file is compiled the output is exactly the same as the one before, but now you can quickly iterate on color changes.
@@ -127,14 +132,14 @@ All text for a single directive must exist on one line. Values after the directi
     Another neat little example is combining often used tags into a new one to save you some key strokes. Here we use italics and bold a lot:
 
         ...
-        "combined.tag.example" "<I><B>Every<I><B> second <I><B>word<I><B> is <I><B>italics<I><B> and <I><B>bold<I><B>."
+        combined.tag.example "<I><B>Every<I><B> second <I><B>word<I><B> is <I><B>italics<I><B> and <I><B>bold<I><B>."
         ...
     
     So we define a new value to make things look a little neater and simpler:
 
         # <IB> <I><B>
         ...
-        "combined.tag.example" "<IB>Every<IB> second <IB>word<IB> is <IB>bold<IB> and <IB>italics<IB>."
+        combined.tag.example "<IB>Every<IB> second <IB>word<IB> is <IB>bold<IB> and <IB>italics<IB>."
         ...
     
     Remember that the `define` directive isn't just for tags and will replace anything. This last example shows how to release your captions for non USA players:
@@ -143,4 +148,4 @@ All text for a single directive must exist on one line. Values after the directi
         # center centre
         # dialog dialogue
 
-    TODO: Point out issues with order of define directives as previous ones can affect later ones e.g. $Vinny affects $Vinny's. Unless this only affects output tokens and not internal directive set?
+    **Cautionary note:** Define directives will affect other directives, meaning define or and name is very important. This can be useful for creating template defines (see this example).
