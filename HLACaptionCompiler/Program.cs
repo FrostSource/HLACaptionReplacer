@@ -240,6 +240,51 @@ namespace HLACaptionCompiler
             Console.WriteLine($"{file.Name} failed to compile...");
             return false;
         }
+        /// <summary>
+        /// Adds all captions from a given <paramref name="file"/> into a given <paramref name="languageDictionary"/>.
+        /// If the language doesn't exist in the dictionary it adds a new <see cref="ClosedCaptions"/> object.
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="captions"></param>
+        /// <returns>Language name if successful, blank otherwise.</returns>
+        public static string ParseFileIntoCaptions(FileInfo file, Dictionary<string, ClosedCaptions> languageDictionary)
+        {
+            WriteVerbose($"Examining {file.Name} ... ");
+            var parser = new ClosedCaptionsFileParser(file, Settings.Strict);
+            if (parser.TryParse())
+            {
+                ClosedCaptions captions;
+                if (languageDictionary.ContainsKey(parser.CaptionLanguage))
+                {
+                    captions = languageDictionary[parser.CaptionLanguage];
+                }
+                else
+                {
+                    captions = new ClosedCaptions();
+                    languageDictionary.Add(parser.CaptionLanguage, captions);
+                }
+
+                foreach (KeyValuePair<string, string> token in parser.CaptionTokens)
+                {
+                    if (captions.HasCaption(token.Key))
+                    {
+                        if (Settings.Verbose) WriteVerbose($"duplicate {token.Key} ... ");
+                        continue;
+                    }
+                    captions.Add(token.Key, token.Value);
+                }
+                WriteLineVerbose("DONE.");
+                return parser.CaptionLanguage.ToLower();
+            }
+            return "";
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="files"></param>
+        /// <param name="dir"></param>
+        /// <param name="language"></param>
+        /// <returns></returns>
         public static int CompileFilesToLanguage(List<FileInfo> files, DirectoryInfo dir, string language)
         {
             var captions = new ClosedCaptions();
@@ -272,6 +317,12 @@ namespace HLACaptionCompiler
             WriteLineVerbose("DONE\n");
             return numberOfGoodFiles;
         }
+        /// <summary>
+        /// Compiles a folder of source caption files to a given folder.
+        /// </summary>
+        /// <param name="from">The directory that contains the source files.</param>
+        /// <param name="to">The directory to compile to.</param>
+        /// <returns>Tuple with number of files compiled and total found.</returns>
         public static (int filesCompiled, int filesTotal) CompileFolder(DirectoryInfo from, DirectoryInfo to)
         {
             if (!from.Exists)
@@ -279,38 +330,44 @@ namespace HLACaptionCompiler
                 Console.WriteLine($"\"{Steam.SteamData.CaptionFolder}\" does not not exist in addon \"{GetParentAddonName(from.FullName)}\".");
                 return (0, 0);
             }
-            int filesCompiled = 0;
-            var languageFiles = new Dictionary<string, List<FileInfo>>();
-            // Calculate which files belong to which language
+            int numberOfGoodFiles = 0;
             var files = from.GetFiles(CaptionSourceFilePattern, SearchOption.AllDirectories);
-            foreach (var file in files)
-            {
-                var name = Path.GetFileNameWithoutExtension(file.FullName)[13..];
-                var catagorySeparator = name.IndexOf('-');
-                var language = name[..(catagorySeparator == -1 ? name.Length : catagorySeparator)];
-                // Create list for language if it's new
-                if (!languageFiles.ContainsKey(language))
-                    languageFiles.Add(language, new List<FileInfo>());
-                // Add file to the language list
-                languageFiles[language].Add(file);
-            }
+            var languageDictionary = new Dictionary<string, ClosedCaptions>();
+            var languageFileSuccesses = new Dictionary<string, int>();
+
             // Back out if no files found
-            if (languageFiles.Count <= 0)
+            if (files.Length <= 0)
             {
                 Console.WriteLine($"No caption content files found in addon \"{GetParentAddonName(from.FullName)}\".");
                 return (0, 0);
             }
-            // Compile each file
-            foreach (var language in languageFiles)
+
+            // Parse each file
+            foreach (var file in files)
             {
-                filesCompiled += CompileFilesToLanguage(language.Value, to, language.Key);
+
+                var language = ParseFileIntoCaptions(file, languageDictionary);
+                if (language != "")
+                {
+                    numberOfGoodFiles++;
+                    if (languageFileSuccesses.ContainsKey(language))
+                        languageFileSuccesses[language]++;
+                    else
+                        languageFileSuccesses.Add(language, 1);
+                }
             }
-            /*foreach (var file in files)
+
+            // Compile/write each caption language
+            foreach (var language in languageDictionary)
             {
-                if (CompileFile(file, to))
-                    successes++;
-            }*/
-            return (filesCompiled,files.Length);
+                var outputFileName = string.Format(CaptionCompiledFileFormat, language.Key);
+                WriteVerbose($"Compiling {languageFileSuccesses[language.Key]} files to \"{outputFileName}\" ...");
+                to.Create();
+                language.Value.Write(Path.Combine(to.FullName, outputFileName));
+                WriteLineVerbose("DONE\n");
+            }
+
+            return (numberOfGoodFiles, files.Length);
         }
         public static void CompileAddonCaptions(string addon)
         {
