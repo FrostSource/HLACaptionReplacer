@@ -23,6 +23,10 @@ namespace HLACaptionCompiler.Parser
         {
             ExpectedTokenTypes = expectedTypes;
         }
+        public ParserSyntaxException(string message, GenericToken encounteredToken)
+            : base(BuildExceptionMessage(message, encounteredToken))
+        {
+        }
         //public ParserException(string message, GenericToken encounteredToken)
         //    : base(BuildExceptionMessage(message, encounteredToken))
         //{

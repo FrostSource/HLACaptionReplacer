@@ -38,9 +38,10 @@ namespace HLACaptionCompiler.Parser
         {
         }
 
-        internal GenericToken EatStringOrIdentifier()
+        internal GenericToken EatStringOrIdentifier(bool? strictOverride = null)
         {
-            if (Strict)
+            strictOverride ??= Strict;
+            if (strictOverride.Value)
             {
                 return Eat(TokenType.String);
             }
@@ -55,19 +56,21 @@ namespace HLACaptionCompiler.Parser
                 return token;
             }
         }
-        internal GenericToken EatStringOrIdentifier(string value)
+        internal GenericToken EatStringOrIdentifier(string value, bool? caseSensitive = null, bool? strictOverride = null)
         {
-            if (Strict)
+            caseSensitive ??= Strict;
+            strictOverride ??= Strict;
+            if (strictOverride.Value)
             {
-                return Eat(TokenType.String, value, Strict);
+                return Eat(TokenType.String, value, caseSensitive.Value);
             }
             else
             {
                 GenericToken token = null;
                 EitherOr(
-                    () => (token = Eat(TokenType.String, value, Strict)) != null
+                    () => (token = Eat(TokenType.String, value, caseSensitive.Value)) != null
                     ,
-                    () => (token = Eat(TokenType.Identifier, value, Strict)) != null
+                    () => (token = Eat(TokenType.Identifier, value, caseSensitive.Value)) != null
                     );
                 return token;
             }
@@ -137,13 +140,14 @@ namespace HLACaptionCompiler.Parser
 
         private GenericNode ParseLang()
         {
-            EatStringOrIdentifier("lang");
+            EatStringOrIdentifier("lang", false, false);
             EatNewLine();
             Eat(TokenType.Symbol, "{");
             EatNewLine();
-            EatStringOrIdentifier("Language");
+            EatStringOrIdentifier("Language", false, false);
             EatNewLine();
-            var language = EatStringOrIdentifier().Value;
+            var language = EatStringOrIdentifier().Value.ToLower();
+            if (language == "") SyntaxError("Language must not be blank");
             EatNewLine();
             var tokensNode = ParseTokens();
             Eat(TokenType.Symbol, "}");
@@ -153,7 +157,7 @@ namespace HLACaptionCompiler.Parser
 
         private GenericNode ParseTokens()
         {
-            EatStringOrIdentifier("Tokens");
+            EatStringOrIdentifier("Tokens", false, false);
             EatNewLine();
             Eat(TokenType.Symbol, "{");
             EatNewLine();
@@ -173,7 +177,8 @@ namespace HLACaptionCompiler.Parser
         private GenericNode ParseToken()
         {
             // token = string , string ;
-            var captionToken = EatStringOrIdentifier().Value;
+            var captionToken = EatStringOrIdentifier(false).Value;
+            if (captionToken == "") SyntaxError("Caption token must not be blank");
             var captionText = EatStringOrIdentifier().Value;
             EatNewLine();
 
@@ -185,7 +190,7 @@ namespace HLACaptionCompiler.Parser
         private bool ParseDirective()
         {
             Eat(TokenType.Symbol, "#");
-            var directiveType = Eat(TokenType.Identifier).Value;
+            string directiveType = Eat(TokenType.Identifier, caseSensitive: false).Value;
             switch (directiveType)
             {
                 case "define":

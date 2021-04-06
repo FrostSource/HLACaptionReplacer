@@ -122,6 +122,10 @@ namespace HLACaptionCompiler.Parser
         {
             throw new ParserSyntaxException(expectedTypes, CurrentToken);
         }
+        internal void SyntaxError(string message)
+        {
+            throw new ParserSyntaxException(message, CurrentToken);
+        }
         internal void EOFError(string message)
         {
             throw new ParserEOFException(message);
