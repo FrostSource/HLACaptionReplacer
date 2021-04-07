@@ -51,7 +51,7 @@ When compiling, the source files will be examined for any errors it can catch in
 
 ## From the command line
 
-`HLACaptionCompiler.exe` accepts files, directories, short hand options prepended by a dash "`-s`", and long hand options predended by double dashes "`--settings`". Short hand options can also be chained together with a single dash "`-spv`"
+`HLACaptionCompiler.exe` accepts files, directories, short hand options prepended by a dash "`-S`", and long hand options predended by double dashes "`--settings`". Short hand options can also be chained together with a single dash "`-spv`"
 
 The following is an example of compiling an addon with `verbose` and `pause` settings:
 
