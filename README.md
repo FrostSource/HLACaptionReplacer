@@ -1,24 +1,17 @@
 # What is it?
 
-The program allows you to quickly compile multiple caption source files into the "game" folder of your addon.
+The program allows you to quickly compile single or multiple caption source files, including directly into the "game" folder of your addon.
 
 # Using the program
 
 ## Where do my files go?
 
-Closed caption source files (e.g. `closecaption_english.txt`) go into the `\resource\subtitles\` folder in the root directory of your addon. It is not created by default so you will need to create the two folders yourself.
+Closed caption source files (e.g. `closecaption_english.txt`) go into the `\resource\subtitles\` path in the root directory of your addon. It is not created by default so you will need to create the two folders yourself.
 
 - Caption source file names **must** start with `closecaption_`, they can then be followed by any naming convention you wish for your project.
 - The file must use the extension `.txt` and be plain text (see [Writing caption files](Writing%20caption%20files.md) for more information).
 - Sub-directories are allowed to further organize your files, all sub-directories will be searched for valid files.
-- The files will be compiled into a mirrored `\resource\subtitles\` folder in the `\game\` path of your addon with the extension `.dat`.
-
-## Loading captions in-game
-
-There are two ways to load captions for your addon:
-
-1. Allow Source to load your captions and add them onto the existing captions. This has the benefit of keeping all the base game SFX captions and Alyx ammo mentions. Nothing needs to be done for this besides compiling your captions. If you want to keep most base game captions but remove some see [Removing base game captions](Writing%20caption%20files.md#Removing_base_game_captions).
-2. Override the base game captions using a script and the console command `cc_lang`. This will cause base game captions to not be displayed, only captions from your custom files will appear. This requires using unique language names like `closecaption_english_custom.dat`. The scripts for this are supplied for you to use and require minimal editing.
+- The files will be compiled into a mirrored `\resource\subtitles\` folder in the `game\` path of your addon with the extension `.dat`.
 
 ## Managing multiple files
 
@@ -37,7 +30,7 @@ Here is an example file structure for two languages:
                 closecaption_french-act2.txt
                 closecaption_french-sfx.txt
 
-The `english` and `french` folders are purely for organization and don't affect the way the files are compiled. The above files will be compiled into the `\game\` folder of your addon as the following:
+The `english` and `french` folders are purely for organization and don't affect the way the files are compiled. The above files will be compiled into the `game\` folder of your addon as the following:
 
     resource\
         subtitles\
@@ -48,11 +41,11 @@ The `english` and `french` folders are purely for organization and don't affect 
 
 `HLACaptionCompiler.exe` will run a little differently depending on the context:
 
-1. If executed from an addon folder it will search for captions source files and automatically compile any into the related "game" folder for that addon.
+1. If executed from an addon folder it will search for caption source files and automatically compile any into the related `game\` folder for that addon.
 
 2. If executed outside of an addon folder it will present you with a menu to choose from any addons it finds in your Half-Life: Alyx installation path.
 
-3. If a valid caption source file (or files) is dragged onto the exe, the file(s) will be compiled and the output directory will be the same as the file(s).
+3. If a valid caption source file (or files) is dragged onto the exe, the file(s) will be compiled separately and the output directory will be the same as the file(s).
 
 When compiling, the source files will be examined for any errors it can catch including duplicate tokens. It has simple error reporting to tell you the line number and position it thinks the error occured in the source file to help narrow it down.
 
@@ -91,6 +84,13 @@ Short hand options are case-sensitive.
 - -s / -strict
 
     Compile with strict syntax checking. Requires all keys and values to be enclosed with double quotes and will fail on duplicate tokens.
+
+## Loading captions in-game
+
+There are two ways to load captions for your addon:
+
+1. Allow Source to load your captions and add them onto the existing captions. This has the benefit of keeping all the base game SFX captions and Alyx ammo mentions. Nothing needs to be done for this besides compiling your captions. If you want to keep most base game captions but remove some see [Removing base game captions](Writing%20caption%20files.md#removing-base-game-captions).
+2. Override the base game captions using a script and the console command `cc_lang`. This will cause base game captions to not be displayed, only captions from your custom files will appear. This requires using unique language names like `closecaption_english_custom.dat`. The scripts for this are supplied for you to use and require minimal editing.
 
 # Directives/Pre-Processors
 
