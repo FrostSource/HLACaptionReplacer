@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HLACaptionCompilerLibrary\HLACaptionCompilerLibrary.csproj" />
+    <ProjectReference Include="..\HLACaptionCompiler\HLACaptionCompiler.csproj" />
   </ItemGroup>
 
 </Project>

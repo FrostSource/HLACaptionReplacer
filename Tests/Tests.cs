@@ -27,12 +27,28 @@ namespace Tests
             //var proc = System.Diagnostics.Process.Start(exePath, $"-e {captionPath} {modifierPath}");
             //var proc = System.Diagnostics.Process.Start(exePath, $"{captionPath}");
             Console.OutputEncoding = Encoding.UTF8;
-            TestClosedCaptionsFileTokenizer();
-            TestClosedCaptionFileParser();
+            //TestClosedCaptionsFileTokenizer();
+            //TestClosedCaptionFileParser();
+            TestHLACaptionCompiler();
 
             //QuickAdesiJsonToSource();
             //EnglishCatagoriesToOtherLanguages();
 
+        }
+
+        private static void TestHLACaptionCompiler()
+        {
+            //var path = Console.ReadLine().Trim('"');
+            var path = Path.GetFullPath(@"../../../Files/closecaption_testparser.txt");
+            if (!File.Exists(path))
+            {
+                Console.WriteLine("Doesn't exist " + path);
+                return;
+            }
+
+            var exePath = Path.GetFullPath(@"../../../../HLACaptionCompiler/bin/Debug/net5.0/HLACaptionCompiler.exe");
+            //var proc = System.Diagnostics.Process.Start(exePath, $"-v {path}");
+            HLACaptionCompiler.Program.Main(new string[] { "-vs", path });
         }
 
         private static void TestClosedCaptionsFileTokenizer()

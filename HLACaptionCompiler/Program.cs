@@ -12,7 +12,7 @@ namespace HLACaptionCompiler
         private static bool WriteSettingsFile { get; set; } = false;
         private static List<FileInfo> CaptionSourceFiles { get; set; } = new();
         private static List<string> AddonDirectories { get; set; } = new();
-        public const string CaptionSourceFileFormat = "closecaption_{0}{1}.txt";
+        public const string CaptionSourceFileFormat = "closecaption_{0}.txt";
         public const string CaptionCompiledFileFormat = "closecaption_{0}.dat";
         public const string CaptionSourceFilePattern = "closecaption_*.txt";
         public const string CaptionCompiledFilePattern = "closecaption_{0}{1}*.dat";
