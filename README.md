@@ -51,17 +51,15 @@ When compiling, the source files will be examined for any errors it can catch in
 
 ## From the command line
 
-`HLACaptionCompiler.exe` accepts files, directories, short hand options prepended by a dash "`-S`", and long hand options predended by double dashes "`--settings`". Short hand options can also be chained together with a single dash "`-spv`"
+`HLACaptionCompiler.exe` accepts files, directories, short hand options prepended by a dash `-S`, and long hand options predended by double dashes `--settings`. Short hand options can also be chained together `-spv`.
 
 The following is an example of compiling an addon with `verbose` and `pause` settings:
 
     HLACaptionCompiler.exe -vp "C:\Program Files (x86)\Steam\steamapps\common\Half-Life Alyx\content\hlvr_addons\my_addon"
 
-## Command line settings/options
-
 If executing the program from the command line you can specify some arguments to alter its behavior. A settings file can also be generated for those who don't like to use the command line.
 
-Any non-valid setting will be considered as a source file and checked for validity. If the path is a single source file it will be compiled to its original location, if the path is an addon folder, all source files in the addon will be compiled. You may pass as many files and addons as command line arguments as you wish.
+Any argument not starting with one or two dashes will be considered as a source file and checked for validity. If the path is a single source file it will be compiled to its original location, if the path is an addon folder, all source files in the addon will be compiled. You may pass as many files and addons as command line arguments as you wish.
 
 Short hand options are case-sensitive.
 
@@ -71,7 +69,7 @@ Short hand options are case-sensitive.
 
 - -S / --settings
     
-    Generates a `settings.json` file or overwrites the existing one, allowing the user to modify settings without using the command line. The program will read from this file when launching.
+    Generates a `CompilerSettings.json` file or overwrites the existing one, allowing the user to modify settings without using the command line. The program will read from this file when launching.
 
 - -p / --pause
   
@@ -83,7 +81,7 @@ Short hand options are case-sensitive.
 
 - -s / -strict
 
-    Compile with strict syntax checking. Requires all keys and values to be enclosed with double quotes and will fail on duplicate tokens.
+    Compile with strict syntax checking. Requires all key values to be enclosed with double quotes, new line for each section, and will fail on duplicate tokens.
 
 ## Loading captions in-game
 
