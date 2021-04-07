@@ -145,8 +145,9 @@ namespace HLACaptionCompiler.Parser
             Eat(TokenType.Symbol, "{");
             EatNewLine();
             EatStringOrIdentifier("Language", false, false);
-            EatNewLine();
+            PushError($"Language name required {(Strict ? "in quotes" : "")} after \"Language\" key");
             var language = EatStringOrIdentifier().Value.ToLower();
+            PopError();
             if (language == "") SyntaxError("Language must not be blank");
             EatNewLine();
             var tokensNode = ParseTokens();
@@ -162,6 +163,7 @@ namespace HLACaptionCompiler.Parser
             Eat(TokenType.Symbol, "{");
             EatNewLine();
             var tokens = new List<GenericNode>();
+            PushError("Expecting directive or caption definition");
             OneOrMore(() =>
                 EitherOr(
                     () => ParseDirective()
@@ -169,6 +171,7 @@ namespace HLACaptionCompiler.Parser
                     () => { tokens.Add(ParseToken()); return true; }
                     )
             );
+            PopError();
             Eat(TokenType.Symbol, "}");
             EatNewLine();
             return new GenericNode(tokens, null, null);
@@ -230,7 +233,7 @@ namespace HLACaptionCompiler.Parser
             }
             catch (ParserException e)
             {
-                Console.WriteLine(e.Message);
+                Console.WriteLine(GenericTokenizer.ReplaceSpecialCharsInString(e.Message));
                 return false;
             }
         }

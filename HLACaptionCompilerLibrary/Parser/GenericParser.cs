@@ -8,22 +8,42 @@ namespace HLACaptionCompiler.Parser
 {
     public class GenericParser
     {
-        public List<GenericToken> Tokens { get; internal set; }
-        public GenericToken NextToken { get => Tokens[Index]; }
-        public int Index { get; private set; }
-        public GenericToken CurrentToken
+        protected List<GenericToken> Tokens { get; set; }
+        protected GenericToken NextToken { get => Tokens[Index]; }
+        protected int Index { get; private set; }
+        protected Stack<string> ErrorStack { get; set; } = new();
+        /// <summary>
+        /// Gets the current token, the one waiting to be consumed.
+        /// </summary>
+        /// <exception cref="ParserEOFException">Thrown when there are no tokens left.</exception>
+        protected GenericToken CurrentToken
         {
             get
             {
-                if (Index >= Tokens.Count) EOFError("unexpected end of file");
+                if (Tokens.Count == 0 || Index >= Tokens.Count) EOFError();
+                return Tokens[Index];
+            }
+        }
+        /// <summary>
+        /// Gets the current token, the one waiting to be consumed, if it exists.
+        /// This will not throw an exception and returns null if not found.
+        /// </summary>
+        protected GenericToken SafeCurrentToken
+        {
+            get
+            {
+                if (Tokens.Count == 0 || Index >= Tokens.Count) return null;
                 return Tokens[Index];
             }
         }
 
-        protected GenericToken Eat(TokenType tokenType, string value = null, bool caseSensitive = true)
+        protected GenericToken Eat(TokenType tokenType, string value = "", bool caseSensitive = true)
         {
-            if (CurrentToken.TokenType != tokenType) SyntaxError(tokenType);
-            if (value != null && CurrentToken.Value.ToLower() != (caseSensitive ? value : value.ToLower())) SyntaxError(tokenType, value);
+            if (CurrentToken.TokenType != tokenType ||
+                (value != "" && CurrentToken.Value.ToLower() != (caseSensitive ? value : value.ToLower())))
+            {
+                SyntaxError(tokenType, value);
+            }
             Index++;
             return Tokens[Index-1];
         }
@@ -76,14 +96,15 @@ namespace HLACaptionCompiler.Parser
                     func();
                 }
             }
-            catch (ParserSyntaxException)
+            catch (ParserException)
             {
                 Index = savedIndex;
             }
         }
         protected bool EitherOr(params Func<bool>[] funcs)
         {
-            var expectedTokenTypes = new List<TokenType>();
+            var expectedTokenTypes = new HashSet<TokenType>();//List<TokenType>();
+            var expectedValues = new HashSet<string>(); //List<string>();
             foreach (var func in funcs)
             {
                 var savedIndex = Index;
@@ -94,11 +115,13 @@ namespace HLACaptionCompiler.Parser
                 }
                 catch (ParserSyntaxException e)
                 {
-                    expectedTokenTypes.AddRange(e.ExpectedTokenTypes);
+                    expectedTokenTypes.UnionWith(e.ExpectedTokenTypes);
+                    expectedValues.UnionWith(e.ExpectedValues);
                     Index = savedIndex;
                 }
             }
-            SyntaxError(expectedTokenTypes.ToArray());
+
+            SyntaxError(expectedTokenTypes.ToArray(), expectedValues.ToArray());
             return false;
         }
         protected void Optional(Action func)
@@ -114,21 +137,39 @@ namespace HLACaptionCompiler.Parser
             }
         }
 
-        internal void SyntaxError(TokenType expectedType, string expectedValue = "")
+        protected void PushError(string message) => ErrorStack.Push(message);
+        protected string PopError()
         {
-            throw new ParserSyntaxException(expectedType, expectedValue, CurrentToken);
+            if (ErrorStack.Count > 0)
+                return ErrorStack.Pop();
+
+            return "";
         }
+
         internal void SyntaxError(TokenType[] expectedTypes)
         {
+            if (ErrorStack.Count > 0) throw new ParserSyntaxException(ErrorStack.Peek(), CurrentToken);
             throw new ParserSyntaxException(expectedTypes, CurrentToken);
+        }
+        internal void SyntaxError(TokenType expectedType, string expectedValue = "")
+        {
+            if (ErrorStack.Count > 0) throw new ParserSyntaxException(ErrorStack.Peek(), CurrentToken);
+            throw new ParserSyntaxException(expectedType, expectedValue, CurrentToken);
+        }
+        internal void SyntaxError(TokenType[] expectedTypes, string[] expectedValues)
+        {
+            if (ErrorStack.Count > 0) throw new ParserSyntaxException(ErrorStack.Peek(), CurrentToken);
+            throw new ParserSyntaxException(expectedTypes, expectedValues, CurrentToken);
         }
         internal void SyntaxError(string message)
         {
+            if (ErrorStack.Count > 0) throw new ParserSyntaxException(ErrorStack.Peek(), CurrentToken);
             throw new ParserSyntaxException(message, CurrentToken);
         }
-        internal void EOFError(string message)
+        internal void EOFError(string message = "Unexpected end of file")
         {
-            throw new ParserEOFException(message);
+            if (ErrorStack.Count > 0) throw new ParserSyntaxException(ErrorStack.Peek(), CurrentToken);
+            throw new ParserEOFException(message, SafeCurrentToken);
         }
     }
 }

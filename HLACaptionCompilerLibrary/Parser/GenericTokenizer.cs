@@ -90,7 +90,8 @@ namespace HLACaptionCompiler.Parser
             //if (!source.EndsWith('\n'))
             //    source += '\n';
 
-            Source = source.Trim() + '\n';
+            //Source = source.Trim() + '\n';
+            Source = source;
         }
 
         /// <summary>
@@ -398,7 +399,7 @@ namespace HLACaptionCompiler.Parser
             if (AutoSkipGarbage) SkipWhiteSpace();
 
             
-            if (!validStartChars.Contains(CurrentChar)) SyntaxError($"Expecting one of '{validStartChars}' but found '{CharToString(CurrentChar)}'");
+            if (!validStartChars.Contains(CurrentChar)) SyntaxError($"Expecting one of '{validStartChars}' but found '{SpecialCharToString(CurrentChar)}'");
             string sequence = CurrentChar.ToString();
             Advance();
             sequence += NextWord($"one of '{validStartChars}'", validChars: validChars, failOnEmpty: false);
@@ -583,11 +584,11 @@ namespace HLACaptionCompiler.Parser
         {
             return $"line {lineNumber}, pos {linePosition}";
         }
-        public static string CharToString(char ch)
+        public static string SpecialCharToString(char ch)
         {
             return ch switch
             {
-                '\0' => "nothing",
+                '\0' => "null",
                 '\r' => "carriage return",
                 '\n' => "new line",
                 '\t' => "tab",
@@ -596,6 +597,14 @@ namespace HLACaptionCompiler.Parser
                 '\'' => "single quotation mark",
                 _ => ch.ToString(),
             };
+        }
+        public static string ReplaceSpecialCharsInString(string str)
+        {
+            return str.Replace("\0", "[null]")
+                      .Replace("\r", "[carriage return]")
+                      .Replace("\n", "[new line]")
+                      .Replace("\t", "[tab]")
+                      .Replace("\f", "[form feed]");
         }
         public static string ConvertStringToEscape(string escapeString)
         {
@@ -656,13 +665,14 @@ namespace HLACaptionCompiler.Parser
 
         protected virtual void AddToken(TokenType tokenType, string value)
         {
-            var token = new GenericToken(tokenType, value, Index, LineNumber, LinePosition);
+            var token = new GenericToken(tokenType, value, Index, SavedLineNumber, SavedLinePosition);
             Tokens.Add(token);
             LastToken = token;
         }
 
         public virtual void TokenizeNext()
         {
+            SavePosition();
             foreach (var handler in CustomHandlers)
             {
                 if (IsNextNoSkip(handler.Key))
