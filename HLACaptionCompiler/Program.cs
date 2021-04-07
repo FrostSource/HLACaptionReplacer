@@ -16,7 +16,7 @@ namespace HLACaptionCompiler
         public const string CaptionCompiledFileFormat = "closecaption_{0}.dat";
         public const string CaptionSourceFilePattern = "closecaption_*.txt";
         public const string CaptionCompiledFilePattern = "closecaption_{0}{1}*.dat";
-        public static DirectoryInfo WorkingDirectory { get; private set; } = new DirectoryInfo(Directory.GetCurrentDirectory());
+        public static DirectoryInfo WorkingDirectory { get; private set; } = new DirectoryInfo(AppContext.BaseDirectory);
         public static string SettingsPath { get; set; } = Path.Combine(WorkingDirectory.FullName, "CompilerSettings.json");
         public static readonly string[] AvailableLanguages = { "Brazilian", "Bulgarian", "Czech", "Danish", "Dutch", "English", "Finnish", "French", "German", "Greek", "Hungarian", "Italian", "Japanese", "Koreana", "Latam", "Norwegian", "Polish", "Portuguese", "Romanian", "Russian", "Schinese", "Spanish", "Swedish", "Tchinese", "Thai", "Turkish", "Ukranian", "Vietnamese" };
 
@@ -406,11 +406,11 @@ namespace HLACaptionCompiler
             }
             catch (SystemException e)
             {
-                WriteLineVerbose($"[Error reading settings file: {e}");
+                WriteLineVerbose($"[Error reading settings file: {e.Message}");
             }
             catch (System.Text.Json.JsonException e)
             {
-                WriteLineVerbose($"[Error reading settings file: {e}");
+                WriteLineVerbose($"[Error reading settings file: {e.Message}");
             }
         }
         public static string GetParentAddonName(string folderPath)
