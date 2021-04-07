@@ -4,12 +4,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-
-#nullable enable
-
 namespace HLACaptionCompiler
 {
-    class Program
+    public class Program
     {
         private static CompilerSettings Settings { get; set; } = new();
         private static bool WriteSettingsFile { get; set; } = false;
@@ -23,7 +20,7 @@ namespace HLACaptionCompiler
         public static string SettingsPath { get; set; } = Path.Combine(WorkingDirectory.FullName, "CompilerSettings.json");
         public static readonly string[] AvailableLanguages = { "Brazilian", "Bulgarian", "Czech", "Danish", "Dutch", "English", "Finnish", "French", "German", "Greek", "Hungarian", "Italian", "Japanese", "Koreana", "Latam", "Norwegian", "Polish", "Portuguese", "Romanian", "Russian", "Schinese", "Spanish", "Swedish", "Tchinese", "Thai", "Turkish", "Ukranian", "Vietnamese" };
 
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             ParseArgs(args);
 
