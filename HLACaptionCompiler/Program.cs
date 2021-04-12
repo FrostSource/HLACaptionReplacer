@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace HLACaptionCompiler
 {
@@ -30,29 +29,35 @@ namespace HLACaptionCompiler
             }
             else if (File.Exists(SettingsPath))
             {
+                WriteLineVerbose($"Loading settings from {SettingsPath}");
                 ReadSettings();
+            }
+            else
+            {
+                WriteLineVerbose("No settings file found.");
             }
             
             if (CaptionSourceFiles.Count == 0 && AddonDirectories.Count == 0)
             {
                 WriteLineVerbose("Compiling from current addon folder or chosen addon.\n");
                 CompileWorkingOrChosenDirectory();
-                return;
             }
-            
-            foreach (var file in CaptionSourceFiles)
+            else
             {
-                if (file.Directory == null)
+                foreach (var file in CaptionSourceFiles)
                 {
-                    WriteLineVerbose($"{file.FullName} had a null directory.");
-                    continue;
+                    if (file.Directory == null)
+                    {
+                        WriteLineVerbose($"{file.FullName} had a null directory.");
+                        continue;
+                    }
+                    CompileFile(file, file.Directory);
                 }
-                CompileFile(file, file.Directory);
-            }
 
-            foreach (var addon in AddonDirectories)
-            {
-                CompileAddonCaptions(addon);
+                foreach (var addon in AddonDirectories)
+                {
+                    CompileAddonCaptions(addon);
+                }
             }
 
             if (Settings.PauseOnCompletion)
@@ -64,7 +69,6 @@ namespace HLACaptionCompiler
 
         public static void CompileWorkingOrChosenDirectory()
         {
-            var hlaMainAddonFolder = Steam.SteamData.GetHLAMainAddOnFolder();
             // Check if inside addon folder
             string addon = GetParentAddonName(WorkingDirectory.FullName);
             // Not inside an addon
@@ -85,7 +89,6 @@ namespace HLACaptionCompiler
 
         private static void ParseArgs(string[] args)
         {
-            //TODO: -a --addon followed by addon folder
             foreach (var arg in args)
             {
                 if (arg.ToLower() == "help")
@@ -308,10 +311,10 @@ namespace HLACaptionCompiler
             }
 
             var outputFileName = string.Format(CaptionCompiledFileFormat, language);
-            WriteVerbose($"Compiling {numberOfGoodFiles}/{files.Count} files to \"{outputFileName}\" ...");
+            WriteVerbose($"Compiling {numberOfGoodFiles}/{files.Count} files to \"{outputFileName}\" ... ");
             dir.Create();
             captions.Write(Path.Combine(dir.FullName, outputFileName));
-            WriteLineVerbose("DONE\n");
+            WriteLineVerbose("DONE.\n");
             return numberOfGoodFiles;
         }
         /// <summary>
@@ -403,6 +406,10 @@ namespace HLACaptionCompiler
                 CompilerSettings? settings;
                 if ((settings = System.Text.Json.JsonSerializer.Deserialize<CompilerSettings>(json)) != null)
                     Settings = settings;
+                WriteLineVerbose($"[PauseOnCompletion {Settings.PauseOnCompletion}]");
+                WriteLineVerbose($"[Verbose {Settings.Verbose}]");
+                WriteLineVerbose($"[Strict {Settings.Strict}]");
+                WriteLineVerbose($"[AllowDirectives {Settings.AllowDirectives}]");
             }
             catch (SystemException e)
             {
@@ -448,14 +455,17 @@ namespace HLACaptionCompiler
 
         public static void PrintHelp()
         {
-            var help = "https://github.com/FrostSource/HLACaptionReplacer for detailed help.\n" +
+            var help = "https://github.com/FrostSource/HLACaptionReplacer/tree/caption-parser for detailed help.\n" +
                 "\n" +
-                "Flags:\n" +
-                "-S/--settings\t\tCreate a settings file in the current directory.\n" +
-                "-v/--verbose\t\tVerbose console messages.\n" +
-                "-p/--pause\t\tWait for input after finishing.\n" +
-                "-s/--strict\t\tCompile with strict syntax checking.\n" +
-                "-D/--nodirective\t\tDisables use of compiler directives.";
+                "Usage:\n" +
+                " HLACaptionCompiler [options] [caption file] [addon folder]\n" +
+                "\n" +
+                "Options:\n" +
+                " -S/--settings\t\tCreate a settings file in the current directory.\n" +
+                " -v/--verbose\t\tVerbose console messages.\n" +
+                " -p/--pause\t\tWait for input after finishing.\n" +
+                " -s/--strict\t\tCompile with strict syntax checking.\n" +
+                " -D/--nodirective\t\tDisables use of compiler directives.";
             Console.WriteLine(help);
         }
 
