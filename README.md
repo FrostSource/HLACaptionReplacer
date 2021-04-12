@@ -130,14 +130,14 @@ All text for a single directive must exist on one line. Values after the directi
     Another neat little example is combining often used tags into a new one to save you some key strokes. Here we use italics and bold a lot:
 
         ...
-        combined.tag.example "<I><B>Every<I><B> second <I><B>word<I><B> is <I><B>italics<I><B> and <I><B>bold<I><B>."
+        combined.tag.example "<I><B>Every<I><B> other <I><B>word<I><B> is <I><B>italics<I><B> and <I><B>bold<I><B>."
         ...
     
     So we define a new value to make things look a little neater and simpler:
 
         # <IB> <I><B>
         ...
-        combined.tag.example "<IB>Every<IB> second <IB>word<IB> is <IB>bold<IB> and <IB>italics<IB>."
+        combined.tag.example "<IB>Every<IB> other <IB>word<IB> is <IB>bold<IB> and <IB>italics<IB>."
         ...
     
     Remember that the `define` directive isn't just for tags and will replace anything. This last example shows how to release your captions for non USA players:
@@ -146,4 +146,4 @@ All text for a single directive must exist on one line. Values after the directi
         # center centre
         # dialog dialogue
 
-    **Cautionary note:** Define directives will affect other directives, meaning define or and name is very important. This can be useful for creating template defines (see this example).
+    **Cautionary note:** Define directives will affect other directives, meaning define order and name are very important. This can be useful for creating template defines (see this example).
