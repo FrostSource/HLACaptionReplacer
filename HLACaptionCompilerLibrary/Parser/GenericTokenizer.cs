@@ -17,7 +17,7 @@ namespace HLACaptionCompiler.Parser
         /// <summary>
         /// Gets or sets if white space should be skipped by the tokenizer when finding elements such as numbers or words.
         /// </summary>
-        public bool AutoSkipGarbage { get; protected set; } = true;
+        public virtual bool AutoSkipGarbage { get; protected set; } = true;
         /// <summary>
         /// Gets or sets the chars that define the default boundary between sequences such as words and numbers.
         /// A sequence will stop when it encounters one of the following: White space, boundary char, EOF.
@@ -34,6 +34,7 @@ namespace HLACaptionCompiler.Parser
         public virtual string StringBoundaryCharacters { get; set; } = "\"";
         public virtual string IdentifierStartCharacters { get; set; } = "_" + AlphaChars;
         public virtual string IdentifierCharacters { get; set; } = "_" + AlphaChars + DigitChars;
+        public virtual char DecimalChar { get; set; } = '.';
         /// <summary>
         /// Maps a <see cref="string"/> to custom <see cref="Action"/> functions allowing the tokenizer to defer to it when the <see cref="string"/> is encountered. 
         /// </summary>
@@ -344,8 +345,10 @@ namespace HLACaptionCompiler.Parser
         /// </summary>
         /// <remarks>May return a similar result to <see cref="NextInteger"/> if no decimal point is found but a valid number is.</remarks>
         /// <returns></returns>
-        public virtual string NextDecimal(char decimalChar = '.')
+        public virtual string NextDecimal(char? decimalChar = null)
         {
+            decimalChar ??= DecimalChar;
+
             if (AutoSkipGarbage) SkipGarbage();
 
             string decimalPre = NextWord("decimal number", BoundaryChars + decimalChar, validChars: DigitChars);
@@ -686,6 +689,17 @@ namespace HLACaptionCompiler.Parser
             {
                 var value = NextWord("identifier", validChars: IdentifierCharacters);
                 AddToken(TokenType.Identifier, value);
+                return;
+            }
+
+            // Integer or float
+            if (DigitChars.Contains(CurrentChar))
+            {
+                var value = NextDecimal();
+                if (value.Contains(DecimalChar))
+                    AddToken(TokenType.Float, value);
+                else
+                    AddToken(TokenType.Integer, value);
                 return;
             }
 
