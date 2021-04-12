@@ -11,6 +11,13 @@ namespace HLACaptionCompiler.Parser
         Identifier,
         Symbol,
         String,
+        Number,
+        Integer,
+        Float,
+        Decimal,
+        Boolean,
+        WhiteSpace,
+        Comment
     }
     public class GenericToken
     {

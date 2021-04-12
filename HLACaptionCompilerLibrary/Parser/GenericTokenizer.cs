@@ -36,6 +36,10 @@ namespace HLACaptionCompiler.Parser
         public virtual string IdentifierCharacters { get; set; } = "_" + AlphaChars + DigitChars;
         public virtual char DecimalChar { get; set; } = '.';
         /// <summary>
+        /// Gets or sets if the tokenizer should not distinguish between <see cref="float"/> and <see cref="int"/>, and instead lump all numbers into <see cref="TokenType.Number"/>.
+        /// </summary>
+        public virtual bool UseNumberTokenOnly { get; set; } = false;
+        /// <summary>
         /// Maps a <see cref="string"/> to custom <see cref="Action"/> functions allowing the tokenizer to defer to it when the <see cref="string"/> is encountered. 
         /// </summary>
         public virtual Dictionary<string, Action<GenericTokenizer>> CustomHandlers { get; set; } = new();
@@ -688,7 +692,7 @@ namespace HLACaptionCompiler.Parser
 
             if (IdentifierStartCharacters.Contains(CurrentChar))
             {
-                var value = NextWord("identifier", validChars: IdentifierCharacters);
+                var value = NextWord("identifier", validChars: IdentifierCharacters, allowEscaping: false);
                 AddToken(TokenType.Identifier, value);
                 return;
             }
@@ -697,10 +701,18 @@ namespace HLACaptionCompiler.Parser
             if (DigitChars.Contains(CurrentChar))
             {
                 var value = NextDecimal();
-                if (value.Contains(DecimalChar))
-                    AddToken(TokenType.Float, value);
+                if (UseNumberTokenOnly)
+                {
+                    AddToken(TokenType.Number, value);
+                }
                 else
-                    AddToken(TokenType.Integer, value);
+                {
+                    if (value.Contains(DecimalChar))
+                        AddToken(TokenType.Float, value);
+                    else
+                        AddToken(TokenType.Integer, value);
+                }
+                
                 return;
             }
 
