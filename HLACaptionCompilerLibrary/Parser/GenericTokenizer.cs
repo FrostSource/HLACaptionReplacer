@@ -232,11 +232,12 @@ namespace HLACaptionCompiler.Parser
         /// </summary>
         /// <param name="expecting">Optionally specify the word that is expected to provide better error reporting.</param>
         /// <returns></returns>
-        public virtual string NextWord(string expecting = "", string boundaryChars = null, string invalidChars = null, string validChars = null, bool failOnEmpty = true, bool allowWhiteSpace = false)
+        public virtual string NextWord(string expecting = "", string boundaryChars = null, string invalidChars = null, string validChars = null, bool failOnEmpty = true, bool allowWhiteSpace = false, bool? allowEscaping = null)
         {
             boundaryChars ??= BoundaryChars;
             invalidChars ??= InvalidChars;
             validChars ??= ValidChars;
+            allowEscaping ??= AllowCharacterEscaping;
             expecting = expecting == "" ? "word" : expecting;
 
             if (AutoSkipGarbage) SkipGarbage();
@@ -247,7 +248,7 @@ namespace HLACaptionCompiler.Parser
                 if (validChars != "" && !validChars.Contains(CurrentChar)) SyntaxError($"Invalid character \"{CurrentChar}\", expecting {expecting}");
                 
                 string escape;
-                if ((escape = NextEscapeSequence()) != "")
+                if (allowEscaping.Value && (escape = NextEscapeSequence()) != "")
                 {
                     if (AutomaticallyConvertEscapedCharacters)
                         str.Append(ConvertStringToEscape(escape));
@@ -719,6 +720,8 @@ namespace HLACaptionCompiler.Parser
                     return;
                 }
             }
+
+            SyntaxError($"unknown character \"{CurrentChar}\"");
         }
 
         public virtual List<GenericToken> Tokenize()
