@@ -29,13 +29,24 @@ namespace Tests
             Console.OutputEncoding = Encoding.UTF8;
             //TestClosedCaptionsFileTokenizer();
             //TestClosedCaptionFileParser();
-            TestHLACaptionCompiler();
+            //TestHLACaptionCompiler();
+            TestCaptionTextTokenizer();
 
             //QuickAdesiJsonToSource();
             //EnglishCatagoriesToOtherLanguages();
 
         }
 
+        private static void TestCaptionTextTokenizer()
+        {
+            var text = "<clr:25.8,255,255>A pachinko machine, in <clr:14,104,89>Vinny's<clr:255,255,255> very own basement!<sb>Who could have put this here?";
+            var tokenizer = new HLACaptionCompiler.Parser.CaptionTextTokenizer(text);
+            tokenizer.Tokenize();
+            foreach (var token in tokenizer.Tokens)
+            {
+                Console.WriteLine("{0,-12}{1,0}", Enum.GetName(typeof(HLACaptionCompiler.Parser.TokenType), token.TokenType), token.Value);
+            }
+        }
         private static void TestHLACaptionCompiler()
         {
             //var path = Console.ReadLine().Trim('"');
