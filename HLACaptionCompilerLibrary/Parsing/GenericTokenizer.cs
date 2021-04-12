@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace HLACaptionCompiler.Parser
+namespace HLACaptionCompiler.Parsing
 {
     //TODO: Should extract relevant members into separate GenericLanguageParser class?
     //TODO: Allow characters to stop enclosed, like \n

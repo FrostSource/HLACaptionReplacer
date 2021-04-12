@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HLACaptionCompiler.Parser
+namespace HLACaptionCompiler.Parsing
 {
     public class ClosedCaptionsFileParser : GenericParser
     {

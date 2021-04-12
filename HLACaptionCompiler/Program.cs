@@ -1,4 +1,4 @@
-﻿using HLACaptionCompiler.Parser;
+﻿using HLACaptionCompiler.Parsing;
 using System;
 using System.Collections.Generic;
 using System.IO;

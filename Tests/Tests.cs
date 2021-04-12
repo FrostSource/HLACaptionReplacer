@@ -40,11 +40,11 @@ namespace Tests
         private static void TestCaptionTextTokenizer()
         {
             var text = "<clr:25.8,255,255>A pachinko machine, in <clr:14,104,89>Vinny's<clr:255,255,255> very own basement!<sb>Who could have put this here?";
-            var tokenizer = new HLACaptionCompiler.Parser.CaptionTextTokenizer(text);
+            var tokenizer = new HLACaptionCompiler.Parsing.CaptionTextTokenizer(text);
             tokenizer.Tokenize();
             foreach (var token in tokenizer.Tokens)
             {
-                Console.WriteLine("{0,-12}{1,0}", Enum.GetName(typeof(HLACaptionCompiler.Parser.TokenType), token.TokenType), token.Value);
+                Console.WriteLine("{0,-12}{1,0}", Enum.GetName(typeof(HLACaptionCompiler.Parsing.TokenType), token.TokenType), token.Value);
             }
         }
         private static void TestHLACaptionCompiler()
@@ -66,11 +66,11 @@ namespace Tests
         {
             //var path = Console.ReadLine().Trim('"');
             var path = @"C:\Program Files (x86)\SteamLibrary\steamapps\common\Half-Life Alyx\content\hlvr_addons\vinny_christmas\resource\subtitles\english\closecaption_english-vinny.txt";
-            var tokenizer = new HLACaptionCompiler.Parser.ClosedCaptionsFileTokenizer(File.ReadAllText(path));
+            var tokenizer = new HLACaptionCompiler.Parsing.ClosedCaptionsFileTokenizer(File.ReadAllText(path));
             tokenizer.Tokenize();
             foreach (var token in tokenizer.Tokens)
             {
-                Console.WriteLine("{0,-12}{1,0}", Enum.GetName(typeof(HLACaptionCompiler.Parser.TokenType), token.TokenType), token.Value);
+                Console.WriteLine("{0,-12}{1,0}", Enum.GetName(typeof(HLACaptionCompiler.Parsing.TokenType), token.TokenType), token.Value);
             }
         }
         public static void TestClosedCaptionFileParser()
@@ -98,7 +98,7 @@ namespace Tests
                 "}\n";
             var strUsed = str1;*/
             var path = @"C:\Program Files (x86)\SteamLibrary\steamapps\common\Half-Life Alyx\content\hlvr_addons\vinny_christmas\resource\subtitles\english\closecaption_english-vinny.txt";
-            var parser = new HLACaptionCompiler.Parser.ClosedCaptionsFileParser(File.ReadAllText(path));
+            var parser = new HLACaptionCompiler.Parsing.ClosedCaptionsFileParser(File.ReadAllText(path));
 
             parser.Parse();
 
